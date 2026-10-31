@@ -66,7 +66,6 @@ export default function App() {
     );
   }, [ownerTrips, joinedTrips]);
 
-  // Connexion Firebase et récupération des road trips
   useEffect(() => {
     let unsubscribeOwner = null;
     let unsubscribeMembers = null;
@@ -255,6 +254,7 @@ export default function App() {
         participants: 1,
         status: "Préparation",
         icon: "🏍️",
+        inviteCode: code,
         createdAt: serverTimestamp(),
       });
 
@@ -285,6 +285,48 @@ export default function App() {
       console.error(error);
       setErrorMessage(error.message);
       alert("Impossible de créer le road trip : " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Créer un code pour une ancienne aventure
+  async function createInviteCodeForTrip() {
+    if (!selectedTrip || selectedTrip.myRole !== "owner" || saving) {
+      return;
+    }
+
+    if (selectedTrip.inviteCode) return;
+
+    setSaving(true);
+    setErrorMessage("");
+
+    try {
+      let code;
+
+      do {
+        code = generateInviteCode();
+      } while (
+        (await getDoc(doc(db, "invites", code))).exists()
+      );
+
+      await setDoc(doc(db, "invites", code), {
+        tripId: selectedTrip.id,
+        ownerId: userId,
+        createdAt: serverTimestamp(),
+      });
+
+      await updateDoc(doc(db, "trips", selectedTrip.id), {
+        inviteCode: code,
+        updatedAt: serverTimestamp(),
+      });
+
+      setCreatedInviteCode(code);
+      setCopyStatus("");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message);
+      alert("Impossible de créer le code : " + error.message);
     } finally {
       setSaving(false);
     }
@@ -418,6 +460,8 @@ export default function App() {
           setEditLocation={setEditLocation}
           savingDetails={savingDetails}
           onSave={saveTripDetails}
+          onCreateInvite={createInviteCodeForTrip}
+          creatingInvite={saving}
           onBack={closeTrip}
         />
       ) : (
@@ -561,7 +605,7 @@ export default function App() {
                 letterSpacing: "6px",
                 textAlign: "center",
                 padding: "20px",
-                color: "#ff8a35",
+                color: "#D9B65D",
               }}
             >
               {createdInviteCode}
@@ -586,7 +630,7 @@ export default function App() {
             </button>
 
             {copyStatus && (
-              <p style={{ textAlign: "center", color: "#ff8a35" }}>
+              <p style={{ textAlign: "center", color: "#D9B65D" }}>
                 {copyStatus}
               </p>
             )}
