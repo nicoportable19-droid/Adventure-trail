@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCdc0vVQmEtXtkXlaUSkJ5YhsxO0ZBv3A",
+  apiKey: "AIzaSyCdc0vVQmEtXtkXlaUSk5J0yhsxO0ZBv3A",
   authDomain: "adventure-trail-2727d.firebaseapp.com",
   projectId: "adventure-trail-2727d",
   storageBucket: "adventure-trail-2727d.firebasestorage.app",
