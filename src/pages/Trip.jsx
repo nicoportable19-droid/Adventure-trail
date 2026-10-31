@@ -1,4 +1,9 @@
 
+import { useState, useEffect } from "react";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
+import MeetingPointMap from "../components/MeetingPointMap";
+
 export default function Trip({
   trip,
   tripMembers,
@@ -11,6 +16,37 @@ export default function Trip({
   onSave,
   onBack,
 }) {
+  const [meetingPoint, setMeetingPoint] = useState(
+    trip.meetingPoint || null
+  );
+  const [savingPoint, setSavingPoint] = useState(false);
+  const [mapMessage, setMapMessage] = useState("");
+
+  useEffect(() => {
+    setMeetingPoint(trip.meetingPoint || null);
+  }, [trip.id, trip.meetingPoint]);
+
+  async function saveMeetingPoint() {
+    if (!meetingPoint || savingPoint) return;
+
+    setSavingPoint(true);
+    setMapMessage("");
+
+    try {
+      await updateDoc(doc(db, "trips", trip.id), {
+        meetingPoint,
+        updatedAt: serverTimestamp(),
+      });
+
+      setMapMessage("Point de rendez-vous enregistré !");
+    } catch (error) {
+      console.error(error);
+      setMapMessage("Erreur : " + error.message);
+    } finally {
+      setSavingPoint(false);
+    }
+  }
+
   return (
     <section className="trips-section">
       <button className="text-button" onClick={onBack}>
@@ -42,7 +78,6 @@ export default function Trip({
           <div className="trip-info">
             <span className="eyebrow">INFORMATIONS</span>
             <h3>Détails de l'aventure</h3>
-
             <p><strong>Destination :</strong> {trip.location}</p>
             <p><strong>Dates :</strong> {trip.dates || "À définir"}</p>
             <p><strong>Statut :</strong> {trip.status || "Préparation"}</p>
@@ -57,9 +92,6 @@ export default function Trip({
           <div className="trip-info">
             <span className="eyebrow">MODIFICATION COLLABORATIVE</span>
             <h3>Modifier l'aventure</h3>
-            <p>
-              Tous les participants peuvent modifier ces informations.
-            </p>
 
             <form onSubmit={onSave}>
               <label>Nom de l'aventure</label>
@@ -82,11 +114,39 @@ export default function Trip({
                 type="submit"
                 disabled={savingDetails}
               >
-                {savingDetails
-                  ? "Enregistrement..."
-                  : "Enregistrer les modifications →"}
+                {savingDetails ? "Enregistrement..." : "Enregistrer les modifications →"}
               </button>
             </form>
+          </div>
+        </article>
+      </div>
+
+      <div style={{ marginTop: "35px" }}>
+        <span className="eyebrow">POINT DE RENDEZ-VOUS</span>
+        <h2>Où commence l'aventure ?</h2>
+
+        <article className="trip-card">
+          <div className="trip-info">
+            <MeetingPointMap
+              meetingPoint={meetingPoint}
+              onSelect={(point) => {
+                setMeetingPoint(point);
+                setMapMessage("");
+              }}
+            />
+
+            <button
+              className="primary-button full-button"
+              onClick={saveMeetingPoint}
+              disabled={!meetingPoint || savingPoint}
+              style={{ marginTop: "15px" }}
+            >
+              {savingPoint ? "Enregistrement..." : "Enregistrer le point de rendez-vous →"}
+            </button>
+
+            {mapMessage && (
+              <p style={{ color: "#ff8a35" }}>{mapMessage}</p>
+            )}
           </div>
         </article>
       </div>
@@ -104,9 +164,7 @@ export default function Trip({
                 <div className="trip-info">
                   <h3>👤 {member.firstName || "Rider"}</h3>
                   <p className="trip-location">
-                    {member.role === "owner"
-                      ? "Organisateur"
-                      : "Participant"}
+                    {member.role === "owner" ? "Organisateur" : "Participant"}
                   </p>
                 </div>
               </article>
@@ -123,14 +181,7 @@ export default function Trip({
           <article className="trip-card">
             <div className="trip-info">
               <h3>🗺️ Itinéraire GPS</h3>
-              <p>Carte et import de fichiers GPX.</p>
-            </div>
-          </article>
-
-          <article className="trip-card">
-            <div className="trip-info">
-              <h3>📍 Point de rendez-vous</h3>
-              <p>Définition du lieu de départ.</p>
+              <p>Import et affichage de fichiers GPX.</p>
             </div>
           </article>
 
