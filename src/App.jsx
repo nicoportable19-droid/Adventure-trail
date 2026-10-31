@@ -29,6 +29,19 @@ function generateInviteCode() {
   ).join("");
 }
 
+function MapClick({ onSelect }) {
+  useMapEvents({
+    click(e) {
+      onSelect({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+      });
+    },
+  });
+
+  return null;
+}
+
 export default function App() {
   const [createdInviteCode, setCreatedInviteCode] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
