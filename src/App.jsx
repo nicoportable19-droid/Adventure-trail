@@ -24,6 +24,14 @@ const initialTrips = [
 ];
 
 export default function App() {
+
+  // Connexion automatique à Firebase
+  useEffect(() => {
+    connectAnonymousUser()
+      .then(() => console.log("Connexion Firebase réussie !"))
+      .catch((error) => console.error("Erreur Firebase :", error));
+  }, []);
+
   const [trips, setTrips] = useState(() => {
     const saved = localStorage.getItem("adventure-trips");
     return saved ? JSON.parse(saved) : initialTrips;
@@ -206,4 +214,3 @@ export default function App() {
     </main>
   );
 }
-
