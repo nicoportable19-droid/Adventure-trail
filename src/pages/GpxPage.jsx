@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
+import MeetingPointMap from "../components/MeetingPointMap";
 
 const MAX_GPX_SIZE = 700 * 1024;
 
@@ -17,16 +18,16 @@ function parseGPX(content) {
   const points = Array.from(
     xml.querySelectorAll("trkpt, rtept")
   )
-    .map((point) => [
-      Number(point.getAttribute("lat")),
-      Number(point.getAttribute("lon")),
-    ])
+    .map((point) => ({
+      lat: Number(point.getAttribute("lat")),
+      lng: Number(point.getAttribute("lon")),
+    }))
     .filter(
-      ([lat, lng]) =>
-        Number.isFinite(lat) &&
-        Number.isFinite(lng) &&
-        Math.abs(lat) <= 90 &&
-        Math.abs(lng) <= 180
+      (point) =>
+        Number.isFinite(point.lat) &&
+        Number.isFinite(point.lng) &&
+        Math.abs(point.lat) <= 90 &&
+        Math.abs(point.lng) <= 180
     );
 
   if (points.length < 2) {
@@ -75,7 +76,7 @@ export default function GpxPage({ trip, onBack }) {
       setGpxContent(content);
       setGpxTrack(points);
       setGpxFileName(file.name);
-      setMessage("Parcours importé ! Pense à l'enregistrer.");
+      setMessage("Parcours importé ! Vérifie le tracé sur la carte.");
     } catch (error) {
       setMessage(error.message);
     }
@@ -145,8 +146,8 @@ export default function GpxPage({ trip, onBack }) {
           <h3>🧭 Le parcours de l'expédition</h3>
 
           <p>
-            Importe ton fichier GPX pour partager le tracé
-            avec les participants du road trip.
+            Importe ton fichier GPX pour afficher le tracé
+            et le partager avec les participants.
           </p>
 
           <label>Choisir un fichier GPX</label>
@@ -168,11 +169,22 @@ export default function GpxPage({ trip, onBack }) {
             </p>
           )}
 
+          {gpxTrack.length > 1 && (
+            <div style={{ marginTop: "20px" }}>
+              <h3>Carte du parcours</h3>
+              <MeetingPointMap
+                meetingPoint={null}
+                onSelect={() => {}}
+                gpxTrack={gpxTrack}
+              />
+            </div>
+          )}
+
           <button
             className="primary-button full-button"
             onClick={saveGPX}
             disabled={!gpxContent || saving}
-            style={{ marginTop: "15px" }}
+            style={{ marginTop: "20px" }}
           >
             {saving ? "Enregistrement..." : "Enregistrer et partager →"}
           </button>
