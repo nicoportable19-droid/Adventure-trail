@@ -1,31 +1,57 @@
-import { useState, useEffect } from "react";
-import { auth, db, connectAnonymousUser } from "./firebase";
+
+import { useState, useEffect, useMemo } from "react";
+import { db, connectAnonymousUser } from "./firebase";
 import {
   collection,
+  collectionGroup,
   addDoc,
   query,
   where,
   onSnapshot,
   serverTimestamp,
+  doc,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import "./style.css";
 
+function generateInviteCode() {
+  const bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+
+  return Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("").toUpperCase();
+}
+
 export default function App() {
-  const [trips, setTrips] = useState([]);
+  const [ownerTrips, setOwnerTrips] = useState([]);
+  const [joinedTrips, setJoinedTrips] = useState([]);
   const [userId, setUserId] = useState(null);
   const [firebaseStatus, setFirebaseStatus] = useState("Connexion...");
   const [errorMessage, setErrorMessage] = useState("");
 
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+
   const [tripName, setTripName] = useState("");
   const [tripLocation, setTripLocation] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [joinFirstName, setJoinFirstName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+
   const [saving, setSaving] = useState(false);
 
-  // Connexion Firebase et chargement des road trips
+  const trips = useMemo(() => {
+    const allTrips = [...ownerTrips, ...joinedTrips];
+    return Array.from(
+      new Map(allTrips.map((trip) => [trip.id, trip])).values()
+    );
+  }, [ownerTrips, joinedTrips]);
+
   useEffect(() => {
-    let unsubscribe = null;
+    let unsubscribeOwner = null;
+    let unsubscribeMembers = null;
     let cancelled = false;
 
     async function startFirebase() {
@@ -38,25 +64,66 @@ export default function App() {
         setUserId(user.uid);
         setFirebaseStatus("Connecté à Firebase");
 
-        const tripsQuery = query(
+        const ownerQuery = query(
           collection(db, "trips"),
           where("ownerId", "==", user.uid)
         );
 
-        unsubscribe = onSnapshot(
-          tripsQuery,
+        unsubscribeOwner = onSnapshot(
+          ownerQuery,
           (snapshot) => {
-            const loadedTrips = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-
-            setTrips(loadedTrips);
+            setOwnerTrips(
+              snapshot.docs.map((item) => ({
+                id: item.id,
+                ...item.data(),
+                myRole: "owner",
+              }))
+            );
           },
           (error) => {
             console.error(error);
             setErrorMessage(error.message);
-            setFirebaseStatus("Erreur de lecture Firestore");
+          }
+        );
+
+        const membersQuery = query(
+          collectionGroup(db, "members"),
+          where("uid", "==", user.uid)
+        );
+
+        unsubscribeMembers = onSnapshot(
+          membersQuery,
+          async (snapshot) => {
+            try {
+              const results = await Promise.all(
+                snapshot.docs.map(async (memberDoc) => {
+                  const tripRef = memberDoc.ref.parent.parent;
+
+                  if (!tripRef) return null;
+
+                  const tripSnapshot = await getDoc(tripRef);
+
+                  if (!tripSnapshot.exists()) return null;
+
+                  return {
+                    id: tripSnapshot.id,
+                    ...tripSnapshot.data(),
+                    myRole: memberDoc.data().role || "member",
+                  };
+                })
+              );
+
+              if (!cancelled) {
+                setJoinedTrips(results.filter(Boolean));
+              }
+            } catch (error) {
+              console.error(error);
+              setErrorMessage(error.message);
+            }
+          },
+          (error) => {
+            console.error(error);
+            setErrorMessage(error.message);
           }
         );
       } catch (error) {
@@ -70,21 +137,28 @@ export default function App() {
 
     return () => {
       cancelled = true;
-      if (unsubscribe) unsubscribe();
+      if (unsubscribeOwner) unsubscribeOwner();
+      if (unsubscribeMembers) unsubscribeMembers();
     };
   }, []);
 
-  // Création d'un road trip dans Firestore
   async function createTrip(e) {
     e.preventDefault();
 
-    if (!tripName.trim() || !userId || saving) return;
+    if (
+      !tripName.trim() ||
+      !firstName.trim() ||
+      !userId ||
+      saving
+    ) return;
 
     setSaving(true);
     setErrorMessage("");
 
     try {
-      await addDoc(collection(db, "trips"), {
+      const code = generateInviteCode();
+
+      const tripRef = await addDoc(collection(db, "trips"), {
         ownerId: userId,
         name: tripName.trim(),
         location: tripLocation.trim() || "Destination à définir",
@@ -95,9 +169,31 @@ export default function App() {
         createdAt: serverTimestamp(),
       });
 
+      await setDoc(
+        doc(db, "trips", tripRef.id, "members", userId),
+        {
+          uid: userId,
+          firstName: firstName.trim(),
+          role: "owner",
+          joinedAt: serverTimestamp(),
+        }
+      );
+
+      await setDoc(doc(db, "invites", code), {
+        tripId: tripRef.id,
+        ownerId: userId,
+        createdAt: serverTimestamp(),
+      });
+
       setTripName("");
       setTripLocation("");
       setShowCreate(false);
+
+      alert(
+        "Ton road trip est créé !\n\n" +
+        "Code d'invitation :\n" + code +
+        "\n\nTransmets ce code à tes compagnons."
+      );
     } catch (error) {
       console.error(error);
       setErrorMessage(error.message);
@@ -107,13 +203,63 @@ export default function App() {
     }
   }
 
-  function joinTrip(e) {
+  async function joinTrip(e) {
     e.preventDefault();
 
-    alert("La fonction d'invitation sera ajoutée à la prochaine étape.");
+    if (
+      !inviteCode.trim() ||
+      !joinFirstName.trim() ||
+      !userId ||
+      saving
+    ) return;
 
-    setInviteCode("");
-    setShowJoin(false);
+    setSaving(true);
+    setErrorMessage("");
+
+    try {
+      const code = inviteCode.trim().toUpperCase();
+      const inviteSnapshot = await getDoc(doc(db, "invites", code));
+
+      if (!inviteSnapshot.exists()) {
+        throw new Error("Ce code d'invitation est introuvable.");
+      }
+
+      const invite = inviteSnapshot.data();
+      const tripId = invite.tripId;
+
+      if (!tripId) {
+        throw new Error("Cette invitation n'est pas valide.");
+      }
+
+      await setDoc(
+        doc(db, "trips", tripId, "members", userId),
+        {
+          uid: userId,
+          firstName: joinFirstName.trim(),
+          role: "member",
+          inviteCode: code,
+          joinedAt: serverTimestamp(),
+        }
+      );
+
+      const tripSnapshot = await getDoc(doc(db, "trips", tripId));
+
+      setInviteCode("");
+      setJoinFirstName("");
+      setShowJoin(false);
+
+      alert(
+        tripSnapshot.exists()
+          ? "Bienvenue dans : " + tripSnapshot.data().name + " !"
+          : "Tu as rejoint le road trip !"
+      );
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message);
+      alert("Impossible de rejoindre le voyage : " + error.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -182,9 +328,7 @@ export default function App() {
         </p>
 
         {errorMessage && (
-          <p style={{ color: "#ff5555" }}>
-            {errorMessage}
-          </p>
+          <p style={{ color: "#ff5555" }}>{errorMessage}</p>
         )}
 
         {trips.length === 0 ? (
@@ -222,10 +366,18 @@ export default function App() {
                     <span>♟ {trip.participants} participant(s)</span>
                   </div>
 
+                  <p style={{ color: "#ff8a35", fontSize: "12px" }}>
+                    {trip.myRole === "owner"
+                      ? "Organisateur"
+                      : "Participant"}
+                  </p>
+
                   <button
                     className="trip-link"
                     onClick={() =>
-                      alert("La page détaillée sera ajoutée prochainement.")
+                      alert(
+                        "La page détaillée sera ajoutée prochainement."
+                      )
                     }
                   >
                     Ouvrir l'aventure <span>→</span>
@@ -263,6 +415,14 @@ export default function App() {
 
             <span className="eyebrow">NOUVELLE EXPÉDITION</span>
             <h2>Créer un road trip</h2>
+
+            <label>Ton prénom</label>
+            <input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Ex. : Alex"
+              required
+            />
 
             <label>Nom de l'aventure</label>
             <input
@@ -309,10 +469,18 @@ export default function App() {
             </button>
 
             <span className="eyebrow">REJOINDRE UNE ÉQUIPE</span>
-            <h2>Vous avez un code ?</h2>
+            <h2>Bienvenue, rider !</h2>
             <p>
-              Entrez le code d'invitation transmis par l'organisateur.
+              Entre ton prénom et le code transmis par l'organisateur.
             </p>
+
+            <label>Ton prénom</label>
+            <input
+              value={joinFirstName}
+              onChange={(e) => setJoinFirstName(e.target.value)}
+              placeholder="Ex. : Alex"
+              required
+            />
 
             <label>Code d'invitation</label>
             <input
@@ -320,15 +488,16 @@ export default function App() {
               onChange={(e) =>
                 setInviteCode(e.target.value.toUpperCase())
               }
-              placeholder="Ex. : TRAIL-2027"
+              placeholder="Colle ton code ici"
               required
             />
 
             <button
               className="primary-button full-button"
               type="submit"
+              disabled={saving || !userId}
             >
-              Rejoindre le road trip →
+              {saving ? "Connexion..." : "Rejoindre le road trip →"}
             </button>
           </form>
         </div>
