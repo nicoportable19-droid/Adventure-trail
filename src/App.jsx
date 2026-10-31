@@ -200,8 +200,8 @@ do {
       setShowCreate(false);
 
       setCreatedInviteCode(code);
-setCopyStatus("");
-      );
+      setCopyStatus("");
+    
     } catch (error) {
       console.error(error);
       setErrorMessage(error.message);
