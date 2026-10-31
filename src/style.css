@@ -482,3 +482,62 @@ footer span:first-child {
     padding: 20px 0;
   }
 }
+
+/* Lisibilité des textes sur le thème sombre */
+
+body,
+.trips-section,
+.trip-card,
+.trip-info {
+  color: #f4f2ed;
+}
+
+.trip-card h2,
+.trip-card h3,
+.trip-card p,
+.trip-card strong,
+.adventure-menu-card h3,
+.adventure-menu-card p {
+  color: #f4f2ed;
+}
+
+.adventure-menu-card {
+  background: #191a17;
+  color: #f4f2ed;
+  border: 1px solid #45443b;
+}
+
+.adventure-menu-card:hover {
+  border-color: #D9B65D;
+}
+
+.adventure-menu-icon {
+  color: #D9B65D;
+  font-size: 32px;
+}
+
+.adventure-menu-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #D9B65D;
+  font-weight: 700;
+}
+
+.trip-info label,
+.trip-info input {
+  color: #f4f2ed;
+}
+
+.trip-info input {
+  background: #24241F;
+  border: 1px solid #555348;
+}
+
+.trip-info input::placeholder {
+  color: #aaa69a;
+}
+
+.adventure-menu-card:focus-visible {
+  outline: 2px solid #D9B65D;
+  outline-offset: 3px;
+}
