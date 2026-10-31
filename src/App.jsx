@@ -1,93 +1,117 @@
+```jsx
 import { useState, useEffect } from "react";
-import { connectAnonymousUser } from "./firebase";
+import { auth, db, connectAnonymousUser } from "./firebase";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  serverTimestamp,
+} from "firebase/firestore";
 import "./style.css";
 
-const initialTrips = [
-  {
-    id: 1,
-    name: "Traversée des Alpes",
-    location: "France · Alpes",
-    dates: "12 — 16 juin 2027",
-    participants: 4,
-    status: "À venir",
-    icon: "⛰️",
-  },
-  {
-    id: 2,
-    name: "Les pistes du Maroc",
-    location: "Maroc · Atlas & désert",
-    dates: "À définir",
-    participants: 6,
-    status: "Préparation",
-    icon: "🏜️",
-  },
-];
-
 export default function App() {
-  // Connexion anonyme à Firebase
-  const [firebaseStatus, setFirebaseStatus] = useState("Connexion à Firebase...");
-
-  useEffect(() => {
-    connectAnonymousUser()
-      .then(() => {
-        console.log("Connexion Firebase réussie !");
-        setFirebaseStatus("Connecté à Firebase");
-      })
-      .catch((error) => {
-        console.error("Erreur Firebase :", error);
-        setFirebaseStatus("Erreur Firebase : " + error.code);
-      });
-  }, []);
-
-  // Gestion des road trips
-  const [trips, setTrips] = useState(() => {
-    try {
-      const saved = localStorage.getItem("adventure-trips");
-      return saved ? JSON.parse(saved) : initialTrips;
-    } catch {
-      return initialTrips;
-    }
-  });
+  const [trips, setTrips] = useState([]);
+  const [userId, setUserId] = useState(null);
+  const [firebaseStatus, setFirebaseStatus] = useState("Connexion...");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [tripName, setTripName] = useState("");
   const [tripLocation, setTripLocation] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  // Création d'un road trip
-  function createTrip(e) {
+  // Connexion Firebase et chargement des road trips
+  useEffect(() => {
+    let unsubscribe = null;
+    let cancelled = false;
+
+    async function startFirebase() {
+      try {
+        const result = await connectAnonymousUser();
+        const user = result.user;
+
+        if (cancelled) return;
+
+        setUserId(user.uid);
+        setFirebaseStatus("Connecté à Firebase");
+
+        const tripsQuery = query(
+          collection(db, "trips"),
+          where("ownerId", "==", user.uid)
+        );
+
+        unsubscribe = onSnapshot(
+          tripsQuery,
+          (snapshot) => {
+            const loadedTrips = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+
+            setTrips(loadedTrips);
+          },
+          (error) => {
+            console.error(error);
+            setErrorMessage(error.message);
+            setFirebaseStatus("Erreur de lecture Firestore");
+          }
+        );
+      } catch (error) {
+        console.error("Erreur Firebase :", error);
+        setFirebaseStatus("Erreur Firebase : " + error.code);
+        setErrorMessage(error.message);
+      }
+    }
+
+    startFirebase();
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Création d'un road trip dans Firestore
+  async function createTrip(e) {
     e.preventDefault();
 
-    if (!tripName.trim()) return;
+    if (!tripName.trim() || !userId || saving) return;
 
-    const newTrip = {
-      id: Date.now(),
-      name: tripName.trim(),
-      location: tripLocation.trim() || "Destination à définir",
-      dates: "Dates à définir",
-      participants: 1,
-      status: "Préparation",
-      icon: "🏍️",
-    };
+    setSaving(true);
+    setErrorMessage("");
 
-    const updatedTrips = [newTrip, ...trips];
+    try {
+      await addDoc(collection(db, "trips"), {
+        ownerId: userId,
+        name: tripName.trim(),
+        location: tripLocation.trim() || "Destination à définir",
+        dates: "Dates à définir",
+        participants: 1,
+        status: "Préparation",
+        icon: "🏍️",
+        createdAt: serverTimestamp(),
+      });
 
-    setTrips(updatedTrips);
-    localStorage.setItem("adventure-trips", JSON.stringify(updatedTrips));
-
-    setTripName("");
-    setTripLocation("");
-    setShowCreate(false);
+      setTripName("");
+      setTripLocation("");
+      setShowCreate(false);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message);
+      alert("Impossible de créer le road trip : " + error.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  // Rejoindre un road trip
   function joinTrip(e) {
     e.preventDefault();
 
-    alert(
-      `Le code ${inviteCode} sera connecté à Firebase à la prochaine étape.`
-    );
+    alert("La fonction d'invitation sera ajoutée à la prochaine étape.");
 
     setInviteCode("");
     setShowJoin(false);
@@ -95,10 +119,6 @@ export default function App() {
 
   return (
     <main className="app">
-      <div style={{ padding: "10px", color: "#ff8a35" }}>
-        Statut Firebase : {firebaseStatus}
-      </div>
-
       <header className="topbar">
         <a className="brand" href="#">
           <span className="brand-icon">A</span>
@@ -119,18 +139,15 @@ export default function App() {
       <section className="hero">
         <div className="hero-content">
           <span className="eyebrow">L'AVENTURE COMMENCE ICI</span>
-
           <h1>
             LA ROUTE
             <br />
             <span>EST À VOUS.</span>
           </h1>
-
           <p>
             Organisez vos road trips moto, partagez vos itinéraires
             et préparez vos aventures ensemble.
           </p>
-
           <button
             className="primary-button"
             onClick={() => setShowCreate(true)}
@@ -150,9 +167,7 @@ export default function App() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">VOTRE GARAGE À AVENTURES</span>
-            <h2>
-              Mes road trips <span>({trips.length})</span>
-            </h2>
+            <h2>Mes road trips <span>({trips.length})</span></h2>
           </div>
 
           <button
@@ -163,16 +178,23 @@ export default function App() {
           </button>
         </div>
 
+        <p style={{ color: "#ff8a35", fontSize: "13px" }}>
+          {firebaseStatus}
+        </p>
+
+        {errorMessage && (
+          <p style={{ color: "#ff5555" }}>
+            {errorMessage}
+          </p>
+        )}
+
         {trips.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏍️</div>
-
             <h3>Prêt à prendre la route ?</h3>
-
             <p>
               Créez votre premier road trip et invitez vos compagnons.
             </p>
-
             <button
               className="primary-button"
               onClick={() => setShowCreate(true)}
@@ -194,7 +216,6 @@ export default function App() {
 
                 <div className="trip-info">
                   <span className="trip-location">{trip.location}</span>
-
                   <h3>{trip.name}</h3>
 
                   <div className="trip-meta">
@@ -205,9 +226,7 @@ export default function App() {
                   <button
                     className="trip-link"
                     onClick={() =>
-                      alert(
-                        "La page du road trip sera ajoutée à la prochaine étape."
-                      )
+                      alert("La page détaillée sera ajoutée prochainement.")
                     }
                   >
                     Ouvrir l'aventure <span>→</span>
@@ -244,11 +263,9 @@ export default function App() {
             </button>
 
             <span className="eyebrow">NOUVELLE EXPÉDITION</span>
-
             <h2>Créer un road trip</h2>
 
             <label>Nom de l'aventure</label>
-
             <input
               value={tripName}
               onChange={(e) => setTripName(e.target.value)}
@@ -257,7 +274,6 @@ export default function App() {
             />
 
             <label>Destination</label>
-
             <input
               value={tripLocation}
               onChange={(e) => setTripLocation(e.target.value)}
@@ -267,8 +283,9 @@ export default function App() {
             <button
               className="primary-button full-button"
               type="submit"
+              disabled={saving || !userId}
             >
-              Créer l'aventure →
+              {saving ? "Enregistrement..." : "Créer l'aventure →"}
             </button>
           </form>
         </div>
@@ -293,15 +310,12 @@ export default function App() {
             </button>
 
             <span className="eyebrow">REJOINDRE UNE ÉQUIPE</span>
-
             <h2>Vous avez un code ?</h2>
-
             <p>
               Entrez le code d'invitation transmis par l'organisateur.
             </p>
 
             <label>Code d'invitation</label>
-
             <input
               value={inviteCode}
               onChange={(e) =>
@@ -320,7 +334,7 @@ export default function App() {
           </form>
         </div>
       )}
-
     </main>
   );
 }
+```
