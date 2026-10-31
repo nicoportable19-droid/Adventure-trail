@@ -1,5 +1,5 @@
-
-import { useState } from "react";
+import { connectAnonymousUser } from "./firebase";
+import { useState, useEffect } from "react";
 import "./style.css";
 
 const initialTrips = [
