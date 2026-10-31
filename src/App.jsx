@@ -41,6 +41,50 @@ function MapClick({ onSelect }) {
   return null;
 }
 
+function MeetingPointMap({ trip, onSelect }) {
+  const point = trip.meetingPoint;
+
+  return (
+    <div style={{ marginTop: "20px" }}>
+      <MapContainer
+        center={
+          point
+            ? [point.lat, point.lng]
+            : [46.603354, 1.888334]
+        }
+        zoom={point ? 13 : 6}
+        style={{
+          height: "380px",
+          width: "100%",
+          borderRadius: "12px",
+          zIndex: 1,
+        }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <MapClick onSelect={onSelect} />
+
+        {point && (
+          <CircleMarker
+            center={[point.lat, point.lng]}
+            radius={10}
+            pathOptions={{
+              color: "#ff8a35",
+              fillColor: "#ff8a35",
+              fillOpacity: 0.9,
+            }}
+          >
+            <Popup>Point de rendez-vous</Popup>
+          </CircleMarker>
+        )}
+      </MapContainer>
+    </div>
+  );
+}
+
 export default function App() {
   const [createdInviteCode, setCreatedInviteCode] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
