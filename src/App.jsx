@@ -16,15 +16,19 @@ import {
 import "./style.css";
 
 function generateInviteCode() {
-  const bytes = new Uint8Array(16);
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(5);
   window.crypto.getRandomValues(bytes);
 
-  return Array.from(bytes, (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("").toUpperCase();
+  return Array.from(
+    bytes,
+    (byte) => alphabet[byte % alphabet.length]
+  ).join("");
 }
 
 export default function App() {
+  const [createdInviteCode, setCreatedInviteCode] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
   const [ownerTrips, setOwnerTrips] = useState([]);
   const [joinedTrips, setJoinedTrips] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -156,7 +160,13 @@ export default function App() {
     setErrorMessage("");
 
     try {
-      const code = generateInviteCode();
+      let code;
+
+do {
+  code = generateInviteCode();
+} while (
+  (await getDoc(doc(db, "invites", code))).exists()
+);
 
       const tripRef = await addDoc(collection(db, "trips"), {
         ownerId: userId,
@@ -189,10 +199,8 @@ export default function App() {
       setTripLocation("");
       setShowCreate(false);
 
-      alert(
-        "Ton road trip est créé !\n\n" +
-        "Code d'invitation :\n" + code +
-        "\n\nTransmets ce code à tes compagnons."
+      setCreatedInviteCode(code);
+setCopyStatus("");
       );
     } catch (error) {
       console.error(error);
@@ -502,6 +510,54 @@ export default function App() {
           </form>
         </div>
       )}
+      {createdInviteCode && (
+  <div className="modal-backdrop">
+    <div className="modal">
+      <span className="eyebrow">INVITATION PRÊTE</span>
+      <h2>Ton équipe t'attend !</h2>
+
+      <p>Voici le code à transmettre à tes compagnons :</p>
+
+      <div style={{
+        fontSize: "32px",
+        fontWeight: "bold",
+        letterSpacing: "6px",
+        textAlign: "center",
+        padding: "20px",
+        color: "#ff8a35"
+      }}>
+        {createdInviteCode}
+      </div>
+
+      <button
+        className="primary-button full-button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(createdInviteCode);
+            setCopyStatus("Code copié !");
+          } catch (error) {
+            setCopyStatus("Copie impossible. Sélectionne le code manuellement.");
+          }
+        }}
+      >
+        {copyStatus === "Code copié !" ? "✓ Code copié !" : "📋 Copier le code"}
+      </button>
+
+      {copyStatus && (
+        <p style={{ textAlign: "center", color: "#ff8a35" }}>
+          {copyStatus}
+        </p>
+      )}
+
+      <button
+        className="outline-button full-button"
+        onClick={() => setCreatedInviteCode("")}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+)}
     </main>
   );
 }
