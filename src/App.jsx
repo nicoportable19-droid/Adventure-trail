@@ -1,5 +1,5 @@
-import { connectAnonymousUser } from "./firebase";
 import { useState, useEffect } from "react";
+import { connectAnonymousUser } from "./firebase";
 import "./style.css";
 
 const initialTrips = [
@@ -24,18 +24,29 @@ const initialTrips = [
 ];
 
 export default function App() {
+  // Connexion anonyme à Firebase
+  const [firebaseStatus, setFirebaseStatus] = useState("Connexion à Firebase...");
 
-  // Connexion automatique à Firebase
   useEffect(() => {
     connectAnonymousUser()
-      .then(() => console.log("Connexion Firebase réussie !"))
+      .then(() => {
+        console.log("Connexion Firebase réussie !");
+        setFirebaseStatus("Connecté à Firebase");
+      })
       .catch((error) => {
-  alert("Erreur Firebase : " + error.code + " - " + error.message);
-});
+        console.error("Erreur Firebase :", error);
+        setFirebaseStatus("Erreur Firebase : " + error.code);
+      });
+  }, []);
 
+  // Gestion des road trips
   const [trips, setTrips] = useState(() => {
-    const saved = localStorage.getItem("adventure-trips");
-    return saved ? JSON.parse(saved) : initialTrips;
+    try {
+      const saved = localStorage.getItem("adventure-trips");
+      return saved ? JSON.parse(saved) : initialTrips;
+    } catch {
+      return initialTrips;
+    }
   });
 
   const [showCreate, setShowCreate] = useState(false);
@@ -44,39 +55,47 @@ export default function App() {
   const [tripLocation, setTripLocation] = useState("");
   const [inviteCode, setInviteCode] = useState("");
 
+  // Création d'un road trip
   function createTrip(e) {
     e.preventDefault();
+
     if (!tripName.trim()) return;
 
     const newTrip = {
       id: Date.now(),
-      name: tripName,
-      location: tripLocation || "Destination à définir",
+      name: tripName.trim(),
+      location: tripLocation.trim() || "Destination à définir",
       dates: "Dates à définir",
       participants: 1,
       status: "Préparation",
       icon: "🏍️",
     };
 
-    const updated = [newTrip, ...trips];
-    setTrips(updated);
-    localStorage.setItem("adventure-trips", JSON.stringify(updated));
+    const updatedTrips = [newTrip, ...trips];
+
+    setTrips(updatedTrips);
+    localStorage.setItem("adventure-trips", JSON.stringify(updatedTrips));
+
     setTripName("");
     setTripLocation("");
     setShowCreate(false);
   }
 
+  // Rejoindre un road trip
   function joinTrip(e) {
     e.preventDefault();
+
     alert(
-      `Le code ${inviteCode} sera vérifié avec Firebase à la prochaine étape.`
+      `Le code ${inviteCode} sera connecté à Firebase à la prochaine étape.`
     );
+
     setInviteCode("");
     setShowJoin(false);
   }
 
   return (
     <main className="app">
+
       <header className="topbar">
         <a className="brand" href="#">
           <span className="brand-icon">A</span>
@@ -86,7 +105,10 @@ export default function App() {
           </span>
         </a>
 
-        <button className="outline-button" onClick={() => setShowJoin(true)}>
+        <button
+          className="outline-button"
+          onClick={() => setShowJoin(true)}
+        >
           Rejoindre avec un code
         </button>
       </header>
@@ -94,19 +116,26 @@ export default function App() {
       <section className="hero">
         <div className="hero-content">
           <span className="eyebrow">L'AVENTURE COMMENCE ICI</span>
+
           <h1>
             LA ROUTE
             <br />
             <span>EST À VOUS.</span>
           </h1>
+
           <p>
             Organisez vos road trips moto, partagez vos itinéraires
             et préparez vos aventures ensemble.
           </p>
-          <button className="primary-button" onClick={() => setShowCreate(true)}>
+
+          <button
+            className="primary-button"
+            onClick={() => setShowCreate(true)}
+          >
             <span>＋</span> Créer un road trip
           </button>
         </div>
+
         <div className="hero-stamp">
           <span>BUILT FOR</span>
           <strong>ADVENTURE</strong>
@@ -118,9 +147,15 @@ export default function App() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">VOTRE GARAGE À AVENTURES</span>
-            <h2>Mes road trips <span>({trips.length})</span></h2>
+            <h2>
+              Mes road trips <span>({trips.length})</span>
+            </h2>
           </div>
-          <button className="text-button" onClick={() => setShowCreate(true)}>
+
+          <button
+            className="text-button"
+            onClick={() => setShowCreate(true)}
+          >
             + Nouvelle aventure
           </button>
         </div>
@@ -128,9 +163,17 @@ export default function App() {
         {trips.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏍️</div>
+
             <h3>Prêt à prendre la route ?</h3>
-            <p>Créez votre premier road trip et invitez vos compagnons.</p>
-            <button className="primary-button" onClick={() => setShowCreate(true)}>
+
+            <p>
+              Créez votre premier road trip et invitez vos compagnons.
+            </p>
+
+            <button
+              className="primary-button"
+              onClick={() => setShowCreate(true)}
+            >
               Créer mon premier road trip
             </button>
           </div>
@@ -141,16 +184,29 @@ export default function App() {
                 <div className="trip-art">
                   <span className="trip-emoji">{trip.icon}</span>
                   <span className="trip-status">{trip.status}</span>
-                  <span className="trip-number">AT / {String(trip.id).slice(-3)}</span>
+                  <span className="trip-number">
+                    AT / {String(trip.id).slice(-3)}
+                  </span>
                 </div>
+
                 <div className="trip-info">
                   <span className="trip-location">{trip.location}</span>
+
                   <h3>{trip.name}</h3>
+
                   <div className="trip-meta">
                     <span>◷ {trip.dates}</span>
                     <span>♟ {trip.participants} participant(s)</span>
                   </div>
-                  <button className="trip-link" onClick={() => alert("La page du road trip sera ajoutée à l'étape suivante.")}>
+
+                  <button
+                    className="trip-link"
+                    onClick={() =>
+                      alert(
+                        "La page du road trip sera ajoutée à la prochaine étape."
+                      )
+                    }
+                  >
                     Ouvrir l'aventure <span>→</span>
                   </button>
                 </div>
@@ -167,25 +223,48 @@ export default function App() {
       </footer>
 
       {showCreate && (
-        <div className="modal-backdrop" onClick={() => setShowCreate(false)}>
-          <form className="modal" onSubmit={createTrip} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close" onClick={() => setShowCreate(false)}>×</button>
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowCreate(false)}
+        >
+          <form
+            className="modal"
+            onSubmit={createTrip}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setShowCreate(false)}
+            >
+              ×
+            </button>
+
             <span className="eyebrow">NOUVELLE EXPÉDITION</span>
+
             <h2>Créer un road trip</h2>
+
             <label>Nom de l'aventure</label>
+
             <input
               value={tripName}
               onChange={(e) => setTripName(e.target.value)}
               placeholder="Ex. : Tour des Pyrénées"
               required
             />
+
             <label>Destination</label>
+
             <input
               value={tripLocation}
               onChange={(e) => setTripLocation(e.target.value)}
               placeholder="Ex. : France · Pyrénées"
             />
-            <button className="primary-button full-button" type="submit">
+
+            <button
+              className="primary-button full-button"
+              type="submit"
+            >
               Créer l'aventure →
             </button>
           </form>
@@ -193,25 +272,52 @@ export default function App() {
       )}
 
       {showJoin && (
-        <div className="modal-backdrop" onClick={() => setShowJoin(false)}>
-          <form className="modal" onSubmit={joinTrip} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close" onClick={() => setShowJoin(false)}>×</button>
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowJoin(false)}
+        >
+          <form
+            className="modal"
+            onSubmit={joinTrip}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setShowJoin(false)}
+            >
+              ×
+            </button>
+
             <span className="eyebrow">REJOINDRE UNE ÉQUIPE</span>
+
             <h2>Vous avez un code ?</h2>
-            <p>Entrez le code d'invitation transmis par l'organisateur.</p>
+
+            <p>
+              Entrez le code d'invitation transmis par l'organisateur.
+            </p>
+
             <label>Code d'invitation</label>
+
             <input
               value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              onChange={(e) =>
+                setInviteCode(e.target.value.toUpperCase())
+              }
               placeholder="Ex. : TRAIL-2027"
               required
             />
-            <button className="primary-button full-button" type="submit">
+
+            <button
+              className="primary-button full-button"
+              type="submit"
+            >
               Rejoindre le road trip →
             </button>
           </form>
         </div>
       )}
+
     </main>
   );
 }
