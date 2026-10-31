@@ -3,6 +3,40 @@ import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import MeetingPointMap from "../components/MeetingPointMap";
 
+const MAX_GPX_SIZE = 700 * 1024;
+
+function parseGPX(content) {
+  const xml = new DOMParser().parseFromString(
+    content,
+    "application/xml"
+  );
+
+  if (xml.querySelector("parsererror")) {
+    throw new Error("Le fichier GPX est invalide.");
+  }
+
+  const points = Array.from(
+    xml.querySelectorAll("trkpt, rtept, wpt")
+  )
+    .map((point) => [
+      Number(point.getAttribute("lat")),
+      Number(point.getAttribute("lon")),
+    ])
+    .filter(
+      ([lat, lng]) =>
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 &&
+        Math.abs(lng) <= 180
+    );
+
+  if (points.length < 2) {
+    throw new Error("Aucun parcours GPS exploitable trouvé.");
+  }
+
+  return points;
+}
+
 export default function Trip({
   trip,
   tripMembers = [],
@@ -23,9 +57,23 @@ export default function Trip({
   const [savingPoint, setSavingPoint] = useState(false);
   const [mapMessage, setMapMessage] = useState("");
 
+  const [gpxTrack, setGpxTrack] = useState(
+    trip.gpxTrack || []
+  );
+  const [gpxContent, setGpxContent] = useState(
+    trip.gpxContent || ""
+  );
+  const [gpxFileName, setGpxFileName] = useState(
+    trip.gpxFileName || ""
+  );
+  const [savingGPX, setSavingGPX] = useState(false);
+
   useEffect(() => {
     setMeetingPoint(trip.meetingPoint || null);
-  }, [trip.id, trip.meetingPoint]);
+    setGpxTrack(trip.gpxTrack || []);
+    setGpxContent(trip.gpxContent || "");
+    setGpxFileName(trip.gpxFileName || "");
+  }, [trip.id]);
 
   async function saveMeetingPoint() {
     if (!meetingPoint || savingPoint) return;
@@ -107,6 +155,86 @@ export default function Trip({
     }
   }
 
+  async function importGPX(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setMapMessage("");
+
+    if (!file.name.toLowerCase().endsWith(".gpx")) {
+      setMapMessage("Choisis un fichier avec l'extension .gpx.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_GPX_SIZE) {
+      setMapMessage("Fichier trop volumineux : maximum 700 Ko.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      const content = await file.text();
+      const points = parseGPX(content);
+
+      setGpxContent(content);
+      setGpxTrack(points);
+      setGpxFileName(file.name);
+
+      setMapMessage(
+        "Parcours importé ! Pense à enregistrer le tracé."
+      );
+    } catch (error) {
+      setMapMessage(error.message);
+    }
+
+    event.target.value = "";
+  }
+
+  async function saveGPX() {
+    if (!gpxContent || savingGPX) return;
+
+    setSavingGPX(true);
+    setMapMessage("");
+
+    try {
+      await updateDoc(doc(db, "trips", trip.id), {
+        gpxContent,
+        gpxTrack,
+        gpxFileName,
+        updatedAt: serverTimestamp(),
+      });
+
+      setMapMessage("Parcours GPX enregistré et partagé !");
+    } catch (error) {
+      console.error(error);
+      setMapMessage("Erreur lors de l'enregistrement : " + error.message);
+    } finally {
+      setSavingGPX(false);
+    }
+  }
+
+  function downloadGPX() {
+    if (!gpxContent) return;
+
+    const blob = new Blob([gpxContent], {
+      type: "application/gpx+xml",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = gpxFileName || "adventure-trail.gpx";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="trips-section">
       <button className="text-button" onClick={onBack}>
@@ -140,29 +268,19 @@ export default function Trip({
             <span className="eyebrow">INFORMATIONS</span>
             <h3>Détails de l'aventure</h3>
 
-            <p>
-              <strong>Destination :</strong> {trip.location}
-            </p>
-            <p>
-              <strong>Dates :</strong> {trip.dates || "À définir"}
-            </p>
-            <p>
-              <strong>Statut :</strong> {trip.status || "Préparation"}
-            </p>
+            <p><strong>Destination :</strong> {trip.location}</p>
+            <p><strong>Dates :</strong> {trip.dates || "À définir"}</p>
+            <p><strong>Statut :</strong> {trip.status || "Préparation"}</p>
             <p>
               <strong>Ton rôle :</strong>{" "}
-              {trip.myRole === "owner"
-                ? "Organisateur"
-                : "Participant"}
+              {trip.myRole === "owner" ? "Organisateur" : "Participant"}
             </p>
           </div>
         </article>
 
         <article className="trip-card">
           <div className="trip-info">
-            <span className="eyebrow">
-              MODIFICATION COLLABORATIVE
-            </span>
+            <span className="eyebrow">MODIFICATION COLLABORATIVE</span>
             <h3>Modifier l'aventure</h3>
 
             <form onSubmit={onSave}>
@@ -231,6 +349,7 @@ export default function Trip({
                 setMeetingPoint(point);
                 setMapMessage("");
               }}
+              gpxTrack={gpxTrack}
             />
 
             <button
@@ -247,6 +366,61 @@ export default function Trip({
             {mapMessage && (
               <p style={{ color: "#ff8a35" }}>{mapMessage}</p>
             )}
+          </div>
+        </article>
+      </div>
+
+      <div style={{ marginTop: "35px" }}>
+        <span className="eyebrow">ITINÉRAIRE GPS</span>
+        <h2>Le parcours de l'expédition</h2>
+
+        <article className="trip-card">
+          <div className="trip-info">
+            <h3>Importer un fichier GPX</h3>
+
+            <p>
+              Sélectionne un fichier GPX depuis ton téléphone.
+              Le tracé apparaîtra sur la carte.
+            </p>
+
+            <label>Choisir un fichier GPX</label>
+            <input
+              type="file"
+              accept=".gpx,application/gpx+xml,application/xml,text/xml"
+              onChange={importGPX}
+            />
+
+            {gpxFileName && (
+              <p style={{ marginTop: "12px" }}>
+                <strong>Fichier :</strong> {gpxFileName}
+              </p>
+            )}
+
+            {gpxTrack.length > 0 && (
+              <p style={{ color: "#ff8a35" }}>
+                {gpxTrack.length} points GPS chargés.
+              </p>
+            )}
+
+            <button
+              className="primary-button full-button"
+              onClick={saveGPX}
+              disabled={!gpxContent || savingGPX}
+              style={{ marginTop: "15px" }}
+            >
+              {savingGPX
+                ? "Enregistrement..."
+                : "Enregistrer et partager le parcours →"}
+            </button>
+
+            <button
+              className="primary-button full-button"
+              onClick={downloadGPX}
+              disabled={!gpxContent}
+              style={{ marginTop: "10px" }}
+            >
+              Télécharger le fichier GPX ↓
+            </button>
           </div>
         </article>
       </div>
@@ -276,17 +450,10 @@ export default function Trip({
       </div>
 
       <div style={{ marginTop: "35px" }}>
-        <span className="eyebrow">BIENTÔT DISPONIBLE</span>
+        <span className="eyebrow">PRÉPARATION</span>
         <h2>Préparation du road trip</h2>
 
         <div className="trip-grid">
-          <article className="trip-card">
-            <div className="trip-info">
-              <h3>🗺️ Itinéraire GPS</h3>
-              <p>Import et affichage de fichiers GPX.</p>
-            </div>
-          </article>
-
           <article className="trip-card">
             <div className="trip-info">
               <h3>☑️ Liste de matériel</h3>
