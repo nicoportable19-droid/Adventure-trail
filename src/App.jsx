@@ -95,6 +95,9 @@ export default function App() {
 
   return (
     <main className="app">
+      <div style={{ padding: "10px", color: "#ff8a35" }}>
+        Statut Firebase : {firebaseStatus}
+      </div>
 
       <header className="topbar">
         <a className="brand" href="#">
