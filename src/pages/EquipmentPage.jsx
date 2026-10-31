@@ -140,10 +140,14 @@ export default function EquipmentPage({
     {
       id: currentUid,
       uid: currentUid,
-      firstName: "Moi",
+      firstName:
+        tripMembers.find((member) => member.uid === currentUid)?.firstName ||
+        "Moi",
     },
-  ].filter((member, index, array) =>
-    array.findIndex((other) => other.uid === member.uid) === index
+  ].filter(
+    (member, index, array) =>
+      member.uid &&
+      array.findIndex((other) => other.uid === member.uid) === index
   );
 
   useEffect(() => {
@@ -195,6 +199,8 @@ export default function EquipmentPage({
             batch.set(itemRef, {
               name,
               category: section.category,
+              toTakeBy: {},
+              takenBy: {},
               broughtBy: {},
               createdBy: currentUid,
               isDefault: true,
@@ -229,6 +235,8 @@ export default function EquipmentPage({
       await addDoc(collection(db, "trips", tripId, "equipment"), {
         name,
         category: "➕ MATÉRIEL AJOUTÉ",
+        toTakeBy: {},
+        takenBy: {},
         broughtBy: {},
         createdBy: currentUid,
         isDefault: false,
@@ -242,26 +250,45 @@ export default function EquipmentPage({
     }
   }
 
-  async function toggleItem(item) {
-    if (!tripId || !currentUid) return;
+  // Tout le monde peut modifier les cases « À prendre ».
+  async function toggleToTake(item, memberUid) {
+    if (!tripId || !currentUid || !memberUid) return;
+
+    const checked = Boolean(item.toTakeBy?.[memberUid]);
 
     try {
-      const updated = { ...(item.broughtBy || {}) };
-
-      if (updated[currentUid]) {
-        delete updated[currentUid];
-      } else {
-        updated[currentUid] = true;
-      }
-
       await updateDoc(
         doc(db, "trips", tripId, "equipment", item.id),
-        { broughtBy: updated }
+        {
+          [`toTakeBy.${memberUid}`]: !checked,
+        }
       );
 
       setError("");
     } catch {
-      setError("Impossible de modifier ta case.");
+      setError("Impossible de modifier la case « À prendre ».");
+    }
+  }
+
+  // Seul le participant concerné peut modifier sa case « Pris ».
+  async function toggleTaken(item) {
+    if (!tripId || !currentUid) return;
+
+    const checked = Boolean(
+      item.takenBy?.[currentUid] || item.broughtBy?.[currentUid]
+    );
+
+    try {
+      await updateDoc(
+        doc(db, "trips", tripId, "equipment", item.id),
+        {
+          [`takenBy.${currentUid}`]: !checked,
+        }
+      );
+
+      setError("");
+    } catch {
+      setError("Impossible de modifier ta case « Pris ».");
     }
   }
 
@@ -302,7 +329,8 @@ export default function EquipmentPage({
   }));
 
   const checkedCount = items.filter(
-    (item) => item.broughtBy?.[currentUid]
+    (item) =>
+      item.takenBy?.[currentUid] || item.broughtBy?.[currentUid]
   ).length;
 
   const departureDate =
@@ -314,17 +342,33 @@ export default function EquipmentPage({
         <table className="equipment-table">
           <thead>
             <tr>
-              <th className="equipment-name-column">Matériel</th>
+              <th
+                className="equipment-name-column"
+                rowSpan="2"
+              >
+                Équipement
+              </th>
 
               {members.map((member) => (
-                <th key={member.uid}>
-                  {member.uid === currentUid
-                    ? "Moi"
-                    : member.firstName || "Rider"}
+                <th key={member.uid} colSpan="2">
+                  {member.firstName || "Rider"}
                 </th>
               ))}
 
-              <th> </th>
+              <th rowSpan="2"> </th>
+            </tr>
+
+            <tr>
+              {members.map((member) => (
+                <>
+                  <th key={`${member.uid}-take`} className="equipment-take-heading">
+                    À prendre
+                  </th>
+                  <th key={`${member.uid}-taken`} className="equipment-taken-heading">
+                    Pris
+                  </th>
+                </>
+              ))}
             </tr>
           </thead>
 
@@ -342,34 +386,56 @@ export default function EquipmentPage({
 
                   {members.map((member) => {
                     const isMe = member.uid === currentUid;
-                    const checked = Boolean(
+
+                    const toTakeChecked = Boolean(
+                      item.toTakeBy?.[member.uid]
+                    );
+
+                    const takenChecked = Boolean(
+                      item.takenBy?.[member.uid] ||
                       item.broughtBy?.[member.uid]
                     );
 
                     return (
-                      <td
-                        key={member.uid}
-                        className="equipment-check-cell"
-                      >
-                        {isMe ? (
+                      <>
+                        <td
+                          key={`${member.uid}-take`}
+                          className="equipment-check-cell equipment-take-cell"
+                        >
                           <input
                             type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleItem(item)}
-                            aria-label={`Je prends ${item.name}`}
-                          />
-                        ) : (
-                          <span
-                            className={
-                              checked
-                                ? "equipment-other-checked"
-                                : "equipment-other-empty"
+                            checked={toTakeChecked}
+                            onChange={() =>
+                              toggleToTake(item, member.uid)
                             }
-                          >
-                            {checked ? "✓" : "—"}
-                          </span>
-                        )}
-                      </td>
+                            aria-label={`${item.name} : à prendre pour ${member.firstName}`}
+                          />
+                        </td>
+
+                        <td
+                          key={`${member.uid}-taken`}
+                          className="equipment-check-cell equipment-taken-cell"
+                        >
+                          {isMe ? (
+                            <input
+                              type="checkbox"
+                              checked={takenChecked}
+                              onChange={() => toggleTaken(item)}
+                              aria-label={`${item.name} : pris par moi`}
+                            />
+                          ) : (
+                            <span
+                              className={
+                                takenChecked
+                                  ? "equipment-other-checked"
+                                  : "equipment-other-empty"
+                              }
+                            >
+                              {takenChecked ? "✓" : "—"}
+                            </span>
+                          )}
+                        </td>
+                      </>
                     );
                   })}
 
@@ -412,7 +478,7 @@ export default function EquipmentPage({
 
       <div className="equipment-progress">
         <strong>
-          Ma préparation : {checkedCount} / {items.length} éléments
+          Ma préparation : {checkedCount} / {items.length} éléments pris
         </strong>
 
         <div className="equipment-progress-track">
@@ -428,8 +494,8 @@ export default function EquipmentPage({
       </div>
 
       <p className="equipment-help">
-        Coche uniquement ta colonne. Les coches des autres participants
-        sont visibles en temps réel.
+        Tout le monde peut indiquer ce qu'un participant doit prendre.
+        Seul le participant concerné peut confirmer qu'il l'a pris.
       </p>
 
       <form onSubmit={addItem} className="equipment-add-form">
