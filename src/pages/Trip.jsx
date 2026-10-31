@@ -5,7 +5,7 @@ import MeetingPointMap from "../components/MeetingPointMap";
 
 export default function Trip({
   trip,
-  tripMembers,
+  tripMembers = [],
   errorMessage,
   editName,
   setEditName,
@@ -18,8 +18,8 @@ export default function Trip({
   const [meetingPoint, setMeetingPoint] = useState(
     trip.meetingPoint || null
   );
-const [address, setAddress] = useState("");
-const [searchingAddress, setSearchingAddress] = useState(false);
+  const [address, setAddress] = useState("");
+  const [searchingAddress, setSearchingAddress] = useState(false);
   const [savingPoint, setSavingPoint] = useState(false);
   const [mapMessage, setMapMessage] = useState("");
 
@@ -46,61 +46,65 @@ const [searchingAddress, setSearchingAddress] = useState(false);
     } finally {
       setSavingPoint(false);
     }
-
-async function searchAddress(e) {
-  e.preventDefault();
-
-  if (!address.trim() || searchingAddress) return;
-
-  setSearchingAddress(true);
-  setMapMessage("");
-
-  try {
-    const cacheKey = "adventure-trail-address-" + address.trim().toLowerCase();
-    const cached = localStorage.getItem(cacheKey);
-
-    let result;
-
-    if (cached) {
-      result = JSON.parse(cached);
-    } else {
-      const params = new URLSearchParams({
-        q: address.trim(),
-        format: "jsonv2",
-        limit: "1",
-      });
-
-      const response = await fetch(
-        "https://nominatim.openstreetmap.org/search?" + params
-      );
-
-      if (!response.ok) {
-        throw new Error("Service de recherche indisponible.");
-      }
-
-      const results = await response.json();
-
-      if (!results.length) {
-        throw new Error("Adresse introuvable. Essaie avec une ville ou un code postal.");
-      }
-
-      result = {
-        lat: Number(results[0].lat),
-        lng: Number(results[0].lon),
-      };
-
-      localStorage.setItem(cacheKey, JSON.stringify(result));
-    }
-
-    setMeetingPoint(result);
-    setMapMessage("Adresse trouvée ! Pense à enregistrer le point.");
-  } catch (error) {
-    setMapMessage(error.message);
-  } finally {
-    setSearchingAddress(false);
   }
-}
 
+  async function searchAddress(e) {
+    e.preventDefault();
+
+    if (!address.trim() || searchingAddress) return;
+
+    setSearchingAddress(true);
+    setMapMessage("");
+
+    try {
+      const cacheKey =
+        "adventure-trail-address-" + address.trim().toLowerCase();
+
+      const cached = localStorage.getItem(cacheKey);
+      let result;
+
+      if (cached) {
+        result = JSON.parse(cached);
+      } else {
+        const params = new URLSearchParams({
+          q: address.trim(),
+          format: "jsonv2",
+          limit: "1",
+        });
+
+        const response = await fetch(
+          "https://nominatim.openstreetmap.org/search?" + params
+        );
+
+        if (!response.ok) {
+          throw new Error("Service de recherche indisponible.");
+        }
+
+        const results = await response.json();
+
+        if (!results.length) {
+          throw new Error(
+            "Adresse introuvable. Essaie avec une ville ou un code postal."
+          );
+        }
+
+        result = {
+          lat: Number(results[0].lat),
+          lng: Number(results[0].lon),
+        };
+
+        localStorage.setItem(cacheKey, JSON.stringify(result));
+      }
+
+      setMeetingPoint(result);
+      setMapMessage(
+        "Adresse trouvée ! Pense à enregistrer le point."
+      );
+    } catch (error) {
+      setMapMessage(error.message);
+    } finally {
+      setSearchingAddress(false);
+    }
   }
 
   return (
@@ -115,6 +119,7 @@ async function searchAddress(e) {
           <h2>{trip.name}</h2>
           <p className="trip-location">{trip.location}</p>
         </div>
+
         <span className="trip-status">
           {trip.status || "Préparation"}
         </span>
@@ -134,19 +139,30 @@ async function searchAddress(e) {
           <div className="trip-info">
             <span className="eyebrow">INFORMATIONS</span>
             <h3>Détails de l'aventure</h3>
-            <p><strong>Destination :</strong> {trip.location}</p>
-            <p><strong>Dates :</strong> {trip.dates || "À définir"}</p>
-            <p><strong>Statut :</strong> {trip.status || "Préparation"}</p>
+
+            <p>
+              <strong>Destination :</strong> {trip.location}
+            </p>
+            <p>
+              <strong>Dates :</strong> {trip.dates || "À définir"}
+            </p>
+            <p>
+              <strong>Statut :</strong> {trip.status || "Préparation"}
+            </p>
             <p>
               <strong>Ton rôle :</strong>{" "}
-              {trip.myRole === "owner" ? "Organisateur" : "Participant"}
+              {trip.myRole === "owner"
+                ? "Organisateur"
+                : "Participant"}
             </p>
           </div>
         </article>
 
         <article className="trip-card">
           <div className="trip-info">
-            <span className="eyebrow">MODIFICATION COLLABORATIVE</span>
+            <span className="eyebrow">
+              MODIFICATION COLLABORATIVE
+            </span>
             <h3>Modifier l'aventure</h3>
 
             <form onSubmit={onSave}>
@@ -170,7 +186,9 @@ async function searchAddress(e) {
                 type="submit"
                 disabled={savingDetails}
               >
-                {savingDetails ? "Enregistrement..." : "Enregistrer les modifications →"}
+                {savingDetails
+                  ? "Enregistrement..."
+                  : "Enregistrer les modifications →"}
               </button>
             </form>
           </div>
@@ -183,25 +201,29 @@ async function searchAddress(e) {
 
         <article className="trip-card">
           <div className="trip-info">
+            <form
+              onSubmit={searchAddress}
+              style={{ marginBottom: "15px" }}
+            >
+              <label>Rechercher une adresse</label>
 
-<form onSubmit={searchAddress} style={{ marginBottom: "15px" }}>
-  <label>Rechercher une adresse</label>
+              <input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Ex. : Place Bellecour, Lyon"
+              />
 
-  <input
-    value={address}
-    onChange={(e) => setAddress(e.target.value)}
-    placeholder="Ex. : Place Bellecour, Lyon"
-  />
-
-  <button
-    className="primary-button full-button"
-    type="submit"
-    disabled={searchingAddress || !address.trim()}
-    style={{ marginTop: "10px" }}
-  >
-    {searchingAddress ? "Recherche..." : "Rechercher l'adresse"}
-  </button>
-</form>
+              <button
+                className="primary-button full-button"
+                type="submit"
+                disabled={searchingAddress || !address.trim()}
+                style={{ marginTop: "10px" }}
+              >
+                {searchingAddress
+                  ? "Recherche..."
+                  : "Rechercher l'adresse"}
+              </button>
+            </form>
 
             <MeetingPointMap
               meetingPoint={meetingPoint}
@@ -217,7 +239,9 @@ async function searchAddress(e) {
               disabled={!meetingPoint || savingPoint}
               style={{ marginTop: "15px" }}
             >
-              {savingPoint ? "Enregistrement..." : "Enregistrer le point de rendez-vous →"}
+              {savingPoint
+                ? "Enregistrement..."
+                : "Enregistrer le point de rendez-vous →"}
             </button>
 
             {mapMessage && (
@@ -240,7 +264,9 @@ async function searchAddress(e) {
                 <div className="trip-info">
                   <h3>👤 {member.firstName || "Rider"}</h3>
                   <p className="trip-location">
-                    {member.role === "owner" ? "Organisateur" : "Participant"}
+                    {member.role === "owner"
+                      ? "Organisateur"
+                      : "Participant"}
                   </p>
                 </div>
               </article>
