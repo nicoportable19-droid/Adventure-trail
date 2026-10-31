@@ -763,40 +763,54 @@ body,
 }
 
 
-/* Rapprocher les colonnes À prendre et Pris */
 
-.equipment-table th,
-.equipment-table td {
-  padding-left: 3px;
-  padding-right: 3px;
+/* CORRECTION DU TABLEAU MATERIEL SUR MOBILE */
+
+.equipment-table {
+  width: 100% !important;
+  min-width: 700px !important;
+  table-layout: auto !important;
+  border-collapse: collapse;
+}
+
+.equipment-table .equipment-name-column {
+  display: table-cell !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  text-align: left !important;
+  white-space: normal !important;
+  color: #f4f2ed !important;
+  padding: 12px !important;
+}
+
+.equipment-table th[colspan="2"] {
+  text-align: center;
 }
 
 .equipment-table .equipment-take-heading,
 .equipment-table .equipment-taken-heading {
-  padding-left: 2px;
-  padding-right: 2px;
-  font-size: 11px;
+  width: 48px !important;
+  min-width: 48px !important;
+  padding: 6px 2px !important;
+  font-size: 11px !important;
+  white-space: normal !important;
 }
 
-.equipment-check-cell {
-  min-width: 32px;
-  width: 32px;
+.equipment-table .equipment-check-cell {
+  width: 48px !important;
+  min-width: 48px !important;
+  padding: 10px 2px !important;
+  text-align: center !important;
 }
 
-.equipment-table th[colspan="2"] {
-  padding-bottom: 8px;
-}
-
-.equipment-table .equipment-name-column {
-  padding-right: 12px;
-}
-
-.equipment-table {
-  min-width: 0;
-  width: max-content;
+.equipment-table .equipment-action-cell {
+  width: 42px;
+  min-width: 42px;
+  padding: 5px !important;
 }
 
 .equipment-table-scroll {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
-
