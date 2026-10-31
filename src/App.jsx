@@ -29,8 +29,9 @@ export default function App() {
   useEffect(() => {
     connectAnonymousUser()
       .then(() => console.log("Connexion Firebase réussie !"))
-      .catch((error) => console.error("Erreur Firebase :", error));
-  }, []);
+      .catch((error) => {
+  alert("Erreur Firebase : " + error.code + " - " + error.message);
+});
 
   const [trips, setTrips] = useState(() => {
     const saved = localStorage.getItem("adventure-trips");
