@@ -1,4 +1,3 @@
-```jsx
 import { useState, useEffect } from "react";
 import { auth, db, connectAnonymousUser } from "./firebase";
 import {
@@ -337,4 +336,3 @@ export default function App() {
     </main>
   );
 }
-```
