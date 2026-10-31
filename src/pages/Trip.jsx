@@ -2,6 +2,7 @@
 import { useState } from "react";
 import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
+import EquipmentPage from "./EquipmentPage";
 
 export default function Trip({
   trip,
@@ -33,6 +34,16 @@ export default function Trip({
     return (
       <MeetingPoint
         trip={trip}
+        onBack={() => setActivePage("home")}
+      />
+    );
+  }
+
+  if (activePage === "equipment") {
+    return (
+      <EquipmentPage
+        trip={trip}
+        tripMembers={tripMembers}
         onBack={() => setActivePage("home")}
       />
     );
@@ -222,7 +233,11 @@ export default function Trip({
               type="button"
               className="trip-card adventure-menu-card"
               onClick={() => {
-                if (section.id === "gpx" || section.id === "map") {
+                if (
+                  section.id === "gpx" ||
+                  section.id === "map" ||
+                  section.id === "equipment"
+                ) {
                   setActivePage(section.id);
                 }
               }}
@@ -235,7 +250,9 @@ export default function Trip({
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
                 <span className="adventure-menu-link">
-                  {section.id === "gpx" || section.id === "map"
+                  {section.id === "gpx" ||
+                  section.id === "map" ||
+                  section.id === "equipment"
                     ? "OUVRIR →"
                     : "BIENTÔT DISPONIBLE"}
                 </span>
