@@ -541,3 +541,223 @@ body,
   outline: 2px solid #D9B65D;
   outline-offset: 3px;
 }
+
+
+/* =====================================
+   CHECK-LIST MATÉRIEL - ADVENTURE TRAIL
+===================================== */
+
+.equipment-page {
+  width: 100%;
+  min-width: 0;
+  color: #f4f2ed;
+}
+
+.equipment-page h2 {
+  color: #D9B65D;
+  margin: 24px 0 12px;
+  font-size: 23px;
+}
+
+.equipment-date,
+.equipment-help {
+  color: #bdbbb2;
+  line-height: 1.5;
+}
+
+.equipment-progress {
+  margin: 20px 0;
+  padding: 15px;
+  background: #191a17;
+  border: 1px solid #45443b;
+  border-radius: 10px;
+}
+
+.equipment-progress strong {
+  color: #D9B65D;
+}
+
+.equipment-progress-track {
+  height: 8px;
+  margin-top: 12px;
+  overflow: hidden;
+  background: #33332e;
+  border-radius: 10px;
+}
+
+.equipment-progress-fill {
+  height: 100%;
+  background: #D9B65D;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.equipment-add-form {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.equipment-add-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  color: #fff;
+  background: #191a17;
+  border: 1px solid #555348;
+  border-radius: 8px;
+}
+
+.equipment-add-form button {
+  padding: 10px 16px;
+  color: #171713;
+  background: #D9B65D;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.equipment-category {
+  margin-top: 28px;
+  overflow: hidden;
+  background: #111210;
+  border: 1px solid #393931;
+  border-radius: 10px;
+}
+
+.equipment-category h3 {
+  margin: 0;
+  padding: 16px 12px;
+  color: #f4f2ed;
+  background: #191a17;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.equipment-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.equipment-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  color: #f4f2ed;
+  background: #111210;
+}
+
+.equipment-table th,
+.equipment-table td {
+  padding: 12px 9px;
+  border-bottom: 1px solid #33332e;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.equipment-table thead th {
+  color: #D9B65D;
+  background: #191a17;
+  font-weight: 800;
+}
+
+.equipment-table .equipment-name-column {
+  width: 35%;
+  min-width: 190px;
+  text-align: left;
+  white-space: normal;
+}
+
+.equipment-table tbody .equipment-name-column {
+  color: #f4f2ed;
+  font-size: 15px;
+}
+
+.equipment-table .equipment-take-heading {
+  color: #c4c4c4;
+  font-size: 12px;
+}
+
+.equipment-table .equipment-taken-heading {
+  color: #65aaff;
+  font-size: 12px;
+}
+
+.equipment-check-cell {
+  min-width: 55px;
+}
+
+.equipment-check-cell input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.equipment-take-cell input[type="checkbox"] {
+  accent-color: #a8a8a8;
+}
+
+.equipment-taken-cell input[type="checkbox"] {
+  accent-color: #3188e8;
+}
+
+.equipment-other-checked {
+  color: #3188e8;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.equipment-other-empty {
+  color: #66665e;
+}
+
+.equipment-action-cell {
+  width: 42px;
+}
+
+.equipment-delete {
+  padding: 5px 9px;
+  color: #e58d78;
+  background: transparent;
+  border: 1px solid #555348;
+  border-radius: 5px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.equipment-delete:hover {
+  background: #38231f;
+}
+
+.equipment-error {
+  padding: 10px;
+  color: #ffaaa0;
+  background: #38231f;
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .equipment-page h2 {
+    font-size: 19px;
+  }
+
+  .equipment-category h3 {
+    font-size: 18px;
+  }
+
+  .equipment-table {
+    min-width: 600px;
+  }
+
+  .equipment-add-form {
+    flex-wrap: wrap;
+  }
+
+  .equipment-add-form button {
+    flex: 0 0 auto;
+  }
+}
