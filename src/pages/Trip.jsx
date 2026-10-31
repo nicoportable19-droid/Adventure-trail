@@ -19,6 +19,8 @@ export default function Trip({
   const [meetingPoint, setMeetingPoint] = useState(
     trip.meetingPoint || null
   );
+const [address, setAddress] = useState("");
+const [searchingAddress, setSearchingAddress] = useState(false);
   const [savingPoint, setSavingPoint] = useState(false);
   const [mapMessage, setMapMessage] = useState("");
 
@@ -45,6 +47,61 @@ export default function Trip({
     } finally {
       setSavingPoint(false);
     }
+
+async function searchAddress(e) {
+  e.preventDefault();
+
+  if (!address.trim() || searchingAddress) return;
+
+  setSearchingAddress(true);
+  setMapMessage("");
+
+  try {
+    const cacheKey = "adventure-trail-address-" + address.trim().toLowerCase();
+    const cached = localStorage.getItem(cacheKey);
+
+    let result;
+
+    if (cached) {
+      result = JSON.parse(cached);
+    } else {
+      const params = new URLSearchParams({
+        q: address.trim(),
+        format: "jsonv2",
+        limit: "1",
+      });
+
+      const response = await fetch(
+        "https://nominatim.openstreetmap.org/search?" + params
+      );
+
+      if (!response.ok) {
+        throw new Error("Service de recherche indisponible.");
+      }
+
+      const results = await response.json();
+
+      if (!results.length) {
+        throw new Error("Adresse introuvable. Essaie avec une ville ou un code postal.");
+      }
+
+      result = {
+        lat: Number(results[0].lat),
+        lng: Number(results[0].lon),
+      };
+
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+    }
+
+    setMeetingPoint(result);
+    setMapMessage("Adresse trouvée ! Pense à enregistrer le point.");
+  } catch (error) {
+    setMapMessage(error.message);
+  } finally {
+    setSearchingAddress(false);
+  }
+}
+
   }
 
   return (
@@ -127,6 +184,26 @@ export default function Trip({
 
         <article className="trip-card">
           <div className="trip-info">
+
+<form onSubmit={searchAddress} style={{ marginBottom: "15px" }}>
+  <label>Rechercher une adresse</label>
+
+  <input
+    value={address}
+    onChange={(e) => setAddress(e.target.value)}
+    placeholder="Ex. : Place Bellecour, Lyon"
+  />
+
+  <button
+    className="primary-button full-button"
+    type="submit"
+    disabled={searchingAddress || !address.trim()}
+    style={{ marginTop: "10px" }}
+  >
+    {searchingAddress ? "Recherche..." : "Rechercher l'adresse"}
+  </button>
+</form>
+
             <MeetingPointMap
               meetingPoint={meetingPoint}
               onSelect={(point) => {
