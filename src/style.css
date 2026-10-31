@@ -1,474 +1,484 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 :root {
   font-family: 'DM Sans', sans-serif;
-    color: #f4f2ed;
-      background: #111210;
-        font-synthesis: none;
-        }
-
-        * {
-          box-sizing: border-box;
-          }
-
-          body {
-            margin: 0;
-              min-width: 320px;
-                background: #111210;
-                }
-
-                button, input {
-                  font: inherit;
-                  }
-
-                  button {
-                    cursor: pointer;
-                    }
-
-                    .app {
-                      max-width: 1440px;
-                        margin: auto;
-                          padding: 0 6%;
-                          }
-
-                          .topbar {
-                            height: 88px;
-                              display: flex;
-                                align-items: center;
-                                  justify-content: space-between;
-                                    border-bottom: 1px solid #30302c;
-                                    }
-
-                                    .brand {
-                                      display: flex;
-                                        align-items: center;
-                                          gap: 12px;
-                                            color: white;
-                                              text-decoration: none;
-                                                font-family: 'Barlow Condensed', sans-serif;
-                                                  font-weight: 900;
-                                                    font-size: 25px;
-                                                      letter-spacing: 1px;
-                                                      }
-
-                                                      .brand-icon {
-                                                        display: grid;
-                                                          place-items: center;
-                                                            width: 42px;
-                                                              height: 42px;
-                                                                background: #f36b21;
-                                                                  color: #111;
-                                                                    font-size: 29px;
-                                                                      transform: skew(-7deg);
-                                                                      }
-
-                                                                      .brand small {
-                                                                        display: block;
-                                                                          color: #88877f;
-                                                                            font: 9px 'DM Sans', sans-serif;
-                                                                              letter-spacing: 2px;
-                                                                              }
-
-                                                                              .orange, .eyebrow {
-                                                                                color: #f36b21;
-                                                                                }
-
-                                                                                .outline-button {
-                                                                                  border: 1px solid #55544d;
-                                                                                    background: transparent;
-                                                                                      color: #eee;
-                                                                                        padding: 11px 17px;
-                                                                                          border-radius: 3px;
-                                                                                            font-size: 12px;
-                                                                                              font-weight: 700;
-                                                                                              }
-
-                                                                                              .outline-button:hover {
-                                                                                                border-color: #f36b21;
-                                                                                                  color: #f36b21;
-                                                                                                  }
-
-                                                                                                  .hero {
-                                                                                                    min-height: 440px;
-                                                                                                      margin-top: 28px;
-                                                                                                        padding: 65px 7%;
-                                                                                                          position: relative;
-                                                                                                            overflow: hidden;
-                                                                                                              display: flex;
-                                                                                                                align-items: center;
-                                                                                                                  background:
-                                                                                                                      linear-gradient(90deg, rgba(10,11,10,.96), rgba(10,11,10,.76) 55%, rgba(10,11,10,.2)),
-                                                                                                                          linear-gradient(0deg, #171713, #343128);
-                                                                                                                            border: 1px solid #34332e;
-                                                                                                                            }
-
-                                                                                                                            .hero::after {
-                                                                                                                              content: '🏍';
-                                                                                                                                position: absolute;
-                                                                                                                                  right: 8%;
-                                                                                                                                    bottom: -45px;
-                                                                                                                                      font-size: clamp(150px, 27vw, 330px);
-                                                                                                                                        opacity: .14;
-                                                                                                                                          filter: grayscale(1);
-                                                                                                                                            transform: rotate(-12deg);
-                                                                                                                                            }
-
-                                                                                                                                            .hero-content {
-                                                                                                                                              max-width: 550px;
-                                                                                                                                                position: relative;
-                                                                                                                                                  z-index: 1;
-                                                                                                                                                  }
-
-                                                                                                                                                  .eyebrow {
-                                                                                                                                                    font-size: 10px;
-                                                                                                                                                      font-weight: 700;
-                                                                                                                                                        letter-spacing: 2.5px;
-                                                                                                                                                        }
-
-                                                                                                                                                        .hero h1 {
-                                                                                                                                                          font: 900 clamp(55px, 8vw, 100px)/.86 'Barlow Condensed', sans-serif;
-                                                                                                                                                            letter-spacing: -2px;
-                                                                                                                                                              margin: 20px 0;
-                                                                                                                                                              }
-
-                                                                                                                                                              .hero h1 span {
-                                                                                                                                                                color: #f36b21;
-                                                                                                                                                                }
-
-                                                                                                                                                                .hero p {
-                                                                                                                                                                  color: #b8b6ad;
-                                                                                                                                                                    font-size: 14px;
-                                                                                                                                                                      line-height: 1.8;
-                                                                                                                                                                        max-width: 390px;
-                                                                                                                                                                          margin-bottom: 27px;
-                                                                                                                                                                          }
-
-                                                                                                                                                                          .primary-button {
-                                                                                                                                                                            background: #f36b21;
-                                                                                                                                                                              color: #17130f;
-                                                                                                                                                                                border: 0;
-                                                                                                                                                                                  border-radius: 3px;
-                                                                                                                                                                                    padding: 14px 22px;
-                                                                                                                                                                                      font-weight: 800;
-                                                                                                                                                                                        font-size: 12px;
-                                                                                                                                                                                          transition: .2s;
-                                                                                                                                                                                          }
-
-                                                                                                                                                                                          .primary-button:hover {
-                                                                                                                                                                                            background: #ff8540;
-                                                                                                                                                                                              transform: translateY(-2px);
-                                                                                                                                                                                              }
-
-                                                                                                                                                                                              .primary-button span {
-                                                                                                                                                                                                font-size: 18px;
-                                                                                                                                                                                                  margin-right: 7px;
-                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                  .hero-stamp {
-                                                                                                                                                                                                    position: absolute;
-                                                                                                                                                                                                      z-index: 1;
-                                                                                                                                                                                                        right: 7%;
-                                                                                                                                                                                                          top: 45px;
-                                                                                                                                                                                                            display: flex;
-                                                                                                                                                                                                              flex-direction: column;
-                                                                                                                                                                                                                align-items: center;
-                                                                                                                                                                                                                  gap: 5px;
-                                                                                                                                                                                                                    border: 1px solid #777064;
-                                                                                                                                                                                                                      padding: 12px;
-                                                                                                                                                                                                                        color: #b8b4a9;
-                                                                                                                                                                                                                          font-size: 8px;
-                                                                                                                                                                                                                            letter-spacing: 2px;
-                                                                                                                                                                                                                              transform: rotate(8deg);
-                                                                                                                                                                                                                              }
-
-                                                                                                                                                                                                                              .hero-stamp strong {
-                                                                                                                                                                                                                                color: #f36b21;
-                                                                                                                                                                                                                                  font: 800 18px 'Barlow Condensed', sans-serif;
-                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                  .trips-section {
-                                                                                                                                                                                                                                    padding: 65px 0 80px;
-                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                    .section-heading {
-                                                                                                                                                                                                                                      display: flex;
-                                                                                                                                                                                                                                        align-items: end;
-                                                                                                                                                                                                                                          justify-content: space-between;
-                                                                                                                                                                                                                                            margin-bottom: 25px;
-                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                            .section-heading h2, .modal h2 {
-                                                                                                                                                                                                                                              font: 800 36px 'Barlow Condensed', sans-serif;
-                                                                                                                                                                                                                                                margin: 8px 0 0;
-                                                                                                                                                                                                                                                  text-transform: uppercase;
-                                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                                  .section-heading h2 span {
-                                                                                                                                                                                                                                                    color: #77766e;
-                                                                                                                                                                                                                                                      font-size: 22px;
-                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                      .text-button, .trip-link {
-                                                                                                                                                                                                                                                        background: transparent;
-                                                                                                                                                                                                                                                          border: 0;
-                                                                                                                                                                                                                                                            color: #f36b21;
-                                                                                                                                                                                                                                                              font-size: 12px;
-                                                                                                                                                                                                                                                                font-weight: 700;
-                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                .trip-grid {
-                                                                                                                                                                                                                                                                  display: grid;
-                                                                                                                                                                                                                                                                    grid-template-columns: repeat(2, minmax(0, 1fr));
-                                                                                                                                                                                                                                                                      gap: 20px;
-                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                      .trip-card {
-                                                                                                                                                                                                                                                                        border: 1px solid #35342f;
-                                                                                                                                                                                                                                                                          background: #191a17;
-                                                                                                                                                                                                                                                                            transition: .2s;
-                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                            .trip-card:hover {
-                                                                                                                                                                                                                                                                              border-color: #f36b21;
-                                                                                                                                                                                                                                                                                transform: translateY(-3px);
-                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                .trip-art {
-                                                                                                                                                                                                                                                                                  height: 150px;
-                                                                                                                                                                                                                                                                                    background:
-                                                                                                                                                                                                                                                                                        radial-gradient(ellipse at 70% 110%, #5b4631 0, transparent 55%),
-                                                                                                                                                                                                                                                                                            linear-gradient(130deg, #292a25, #424036);
-                                                                                                                                                                                                                                                                                              display: flex;
-                                                                                                                                                                                                                                                                                                align-items: center;
-                                                                                                                                                                                                                                                                                                  justify-content: center;
-                                                                                                                                                                                                                                                                                                    position: relative;
-                                                                                                                                                                                                                                                                                                      overflow: hidden;
-                                                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                                                      .trip-emoji {
-                                                                                                                                                                                                                                                                                                        font-size: 75px;
-                                                                                                                                                                                                                                                                                                          opacity: .8;
-                                                                                                                                                                                                                                                                                                            filter: grayscale(.5);
-                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                            .trip-status, .trip-number {
-                                                                                                                                                                                                                                                                                                              position: absolute;
-                                                                                                                                                                                                                                                                                                                top: 13px;
-                                                                                                                                                                                                                                                                                                                  font-size: 9px;
-                                                                                                                                                                                                                                                                                                                    letter-spacing: 1px;
-                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                    .trip-status {
-                                                                                                                                                                                                                                                                                                                      left: 14px;
-                                                                                                                                                                                                                                                                                                                        background: #f36b21;
-                                                                                                                                                                                                                                                                                                                          color: #17130f;
-                                                                                                                                                                                                                                                                                                                            padding: 6px 9px;
-                                                                                                                                                                                                                                                                                                                              font-weight: 800;
-                                                                                                                                                                                                                                                                                                                                text-transform: uppercase;
-                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                .trip-number {
-                                                                                                                                                                                                                                                                                                                                  right: 14px;
-                                                                                                                                                                                                                                                                                                                                    color: #aaa69b;
-                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                    .trip-info {
-                                                                                                                                                                                                                                                                                                                                      padding: 20px;
-                                                                                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                                                                                      .trip-location {
-                                                                                                                                                                                                                                                                                                                                        color: #f36b21;
-                                                                                                                                                                                                                                                                                                                                          font-size: 10px;
-                                                                                                                                                                                                                                                                                                                                            letter-spacing: 1.5px;
-                                                                                                                                                                                                                                                                                                                                              text-transform: uppercase;
-                                                                                                                                                                                                                                                                                                                                              }
-
-                                                                                                                                                                                                                                                                                                                                              .trip-info h3 {
-                                                                                                                                                                                                                                                                                                                                                font: 700 27px 'Barlow Condensed', sans-serif;
-                                                                                                                                                                                                                                                                                                                                                  text-transform: uppercase;
-                                                                                                                                                                                                                                                                                                                                                    margin: 7px 0 17px;
-                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                    .trip-meta {
-                                                                                                                                                                                                                                                                                                                                                      display: flex;
-                                                                                                                                                                                                                                                                                                                                                        flex-wrap: wrap;
-                                                                                                                                                                                                                                                                                                                                                          gap: 17px;
-                                                                                                                                                                                                                                                                                                                                                            color: #99988f;
-                                                                                                                                                                                                                                                                                                                                                              font-size: 11px;
-                                                                                                                                                                                                                                                                                                                                                                padding-bottom: 18px;
-                                                                                                                                                                                                                                                                                                                                                                  border-bottom: 1px solid #34342e;
-                                                                                                                                                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                                                                                                                                                  .trip-link {
-                                                                                                                                                                                                                                                                                                                                                                    width: 100%;
-                                                                                                                                                                                                                                                                                                                                                                      text-align: left;
-                                                                                                                                                                                                                                                                                                                                                                        padding: 17px 0 0;
-                                                                                                                                                                                                                                                                                                                                                                          display: flex;
-                                                                                                                                                                                                                                                                                                                                                                            justify-content: space-between;
-                                                                                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                                                                                            .trip-link span {
-                                                                                                                                                                                                                                                                                                                                                                              font-size: 17px;
-                                                                                                                                                                                                                                                                                                                                                                              }
-
-                                                                                                                                                                                                                                                                                                                                                                              .empty-state {
-                                                                                                                                                                                                                                                                                                                                                                                padding: 55px 20px;
-                                                                                                                                                                                                                                                                                                                                                                                  text-align: center;
-                                                                                                                                                                                                                                                                                                                                                                                    border: 1px dashed #48463f;
-                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                    .empty-icon {
-                                                                                                                                                                                                                                                                                                                                                                                      font-size: 45px;
-                                                                                                                                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                                                                                                                                      .empty-state h3 {
-                                                                                                                                                                                                                                                                                                                                                                                        font: 700 25px 'Barlow Condensed', sans-serif;
-                                                                                                                                                                                                                                                                                                                                                                                          text-transform: uppercase;
-                                                                                                                                                                                                                                                                                                                                                                                          }
-
-                                                                                                                                                                                                                                                                                                                                                                                          .empty-state p, .modal p {
-                                                                                                                                                                                                                                                                                                                                                                                            color: #aaa89e;
-                                                                                                                                                                                                                                                                                                                                                                                              font-size: 13px;
-                                                                                                                                                                                                                                                                                                                                                                                                line-height: 1.7;
-                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                footer {
-                                                                                                                                                                                                                                                                                                                                                                                                  min-height: 65px;
-                                                                                                                                                                                                                                                                                                                                                                                                    border-top: 1px solid #30302c;
-                                                                                                                                                                                                                                                                                                                                                                                                      display: flex;
-                                                                                                                                                                                                                                                                                                                                                                                                        justify-content: space-between;
-                                                                                                                                                                                                                                                                                                                                                                                                          align-items: center;
-                                                                                                                                                                                                                                                                                                                                                                                                            gap: 15px;
-                                                                                                                                                                                                                                                                                                                                                                                                              color: #77766e;
-                                                                                                                                                                                                                                                                                                                                                                                                                font-size: 9px;
-                                                                                                                                                                                                                                                                                                                                                                                                                  letter-spacing: 1.5px;
-                                                                                                                                                                                                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                  footer span:first-child {
-                                                                                                                                                                                                                                                                                                                                                                                                                    color: #f36b21;
-                                                                                                                                                                                                                                                                                                                                                                                                                      font-weight: 800;
-                                                                                                                                                                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                      .modal-backdrop {
-                                                                                                                                                                                                                                                                                                                                                                                                                        position: fixed;
-                                                                                                                                                                                                                                                                                                                                                                                                                          inset: 0;
-                                                                                                                                                                                                                                                                                                                                                                                                                            z-index: 10;
-                                                                                                                                                                                                                                                                                                                                                                                                                              background: #000b;
-                                                                                                                                                                                                                                                                                                                                                                                                                                display: grid;
-                                                                                                                                                                                                                                                                                                                                                                                                                                  place-items: center;
-                                                                                                                                                                                                                                                                                                                                                                                                                                    padding: 20px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                    .modal {
-                                                                                                                                                                                                                                                                                                                                                                                                                                      width: min(100%, 440px);
-                                                                                                                                                                                                                                                                                                                                                                                                                                        background: #1b1c18;
-                                                                                                                                                                                                                                                                                                                                                                                                                                          border: 1px solid #48463f;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 35px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                              position: relative;
-                                                                                                                                                                                                                                                                                                                                                                                                                                              }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                              .modal-close {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                position: absolute;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                  right: 15px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    top: 10px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      border: 0;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        background: transparent;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                          color: white;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            font-size: 27px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            .modal label {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                              display: block;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                margin: 22px 0 8px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                  color: #c8c5bb;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    font-size: 11px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                      font-weight: 700;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                      .modal input {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        width: 100%;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                          background: #111210;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #45443d;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              color: white;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                padding: 13px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  outline: none;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .modal input:focus {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border-color: #f36b21;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .full-button {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      width: 100%;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        margin-top: 25px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @media (max-width: 650px) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          .app {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              padding: 0 5%;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .topbar {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      height: 72px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          .brand {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              font-size: 20px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .brand-icon {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      width: 35px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          height: 35px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              font-size: 24px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .outline-button {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      padding: 9px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          font-size: 10px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              .hero {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  min-height: 390px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      padding: 45px 7%;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          .hero-stamp {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              display: none;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .hero::after {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      right: -30px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          bottom: -20px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              font-size: 190px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .hero h1 {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      font-size: 65px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          .section-heading {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              align-items: start;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  gap: 15px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      .section-heading h2 {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          font-size: 29px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              .text-button {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  max-width: 110px;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      text-align: right;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          line-height: 1.5;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              .trip-grid {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  grid-template-columns: 1fr;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      footer {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          flex-wrap: wrap;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              padding: 20px 0;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+  color: #f4f2ed;
+  background: #111210;
+  font-synthesis: none;
+
+  --sand: #D9B65D;
+  --sand-dark: #B89545;
+  --sand-light: #E8CC82;
+  --background: #111210;
+  --card: #191a17;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+}
+
+button, input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app {
+  max-width: 1440px;
+  margin: auto;
+  padding: 0 6%;
+}
+
+.topbar {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #30302c;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  text-decoration: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 25px;
+  letter-spacing: 1px;
+}
+
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  background: var(--sand);
+  color: #111;
+  font-size: 29px;
+  transform: skew(-7deg);
+}
+
+.brand small {
+  display: block;
+  color: #88877f;
+  font: 9px 'DM Sans', sans-serif;
+  letter-spacing: 2px;
+}
+
+.orange, .eyebrow {
+  color: var(--sand);
+}
+
+.outline-button {
+  border: 1px solid #55544d;
+  background: transparent;
+  color: #eee;
+  padding: 11px 17px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.outline-button:hover {
+  border-color: var(--sand);
+  color: var(--sand);
+}
+
+.hero {
+  min-height: 440px;
+  margin-top: 28px;
+  padding: 65px 7%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(90deg, rgba(10,11,10,.96), rgba(10,11,10,.76) 55%, rgba(10,11,10,.2)),
+    linear-gradient(0deg, #171713, #343128);
+  border: 1px solid #34332e;
+}
+
+.hero::after {
+  content: '🏍';
+  position: absolute;
+  right: 8%;
+  bottom: -45px;
+  font-size: clamp(150px, 27vw, 330px);
+  opacity: .14;
+  filter: grayscale(1);
+  transform: rotate(-12deg);
+}
+
+.hero-content {
+  max-width: 550px;
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+}
+
+.hero h1 {
+  font: 900 clamp(55px, 8vw, 100px)/.86 'Barlow Condensed', sans-serif;
+  letter-spacing: -2px;
+  margin: 20px 0;
+}
+
+.hero h1 span {
+  color: var(--sand);
+}
+
+.hero p {
+  color: #b8b6ad;
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 390px;
+  margin-bottom: 27px;
+}
+
+.primary-button {
+  background: var(--sand);
+  color: #17130f;
+  border: 0;
+  border-radius: 3px;
+  padding: 14px 22px;
+  font-weight: 800;
+  font-size: 12px;
+  transition: .2s;
+}
+
+.primary-button:hover {
+  background: var(--sand-light);
+  transform: translateY(-2px);
+}
+
+.primary-button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primary-button span {
+  font-size: 18px;
+  margin-right: 7px;
+}
+
+.hero-stamp {
+  position: absolute;
+  z-index: 1;
+  right: 7%;
+  top: 45px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #777064;
+  padding: 12px;
+  color: #b8b4a9;
+  font-size: 8px;
+  letter-spacing: 2px;
+  transform: rotate(8deg);
+}
+
+.hero-stamp strong {
+  color: var(--sand);
+  font: 800 18px 'Barlow Condensed', sans-serif;
+}
+
+.trips-section {
+  padding: 65px 0 80px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.section-heading h2, .modal h2 {
+  font: 800 36px 'Barlow Condensed', sans-serif;
+  margin: 8px 0 0;
+  text-transform: uppercase;
+}
+
+.section-heading h2 span {
+  color: #77766e;
+  font-size: 22px;
+}
+
+.text-button, .trip-link {
+  background: transparent;
+  border: 0;
+  color: var(--sand);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.trip-card {
+  border: 1px solid #35342f;
+  background: var(--card);
+  transition: .2s;
+}
+
+.trip-card:hover {
+  border-color: var(--sand-dark);
+  transform: translateY(-3px);
+}
+
+.trip-art {
+  height: 150px;
+  background:
+    radial-gradient(ellipse at 70% 110%, #5b4631 0, transparent 55%),
+    linear-gradient(130deg, #292a25, #424036);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.trip-emoji {
+  font-size: 75px;
+  opacity: .8;
+  filter: grayscale(.5);
+}
+
+.trip-status, .trip-number {
+  position: absolute;
+  top: 13px;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.trip-status {
+  left: 14px;
+  background: var(--sand);
+  color: #17130f;
+  padding: 6px 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.trip-number {
+  right: 14px;
+  color: #aaa69b;
+}
+
+.trip-info {
+  padding: 20px;
+}
+
+.trip-location {
+  color: var(--sand);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.trip-info h3 {
+  font: 700 27px 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  margin: 7px 0 17px;
+}
+
+.trip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 17px;
+  color: #99988f;
+  font-size: 11px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #34342e;
+}
+
+.trip-link {
+  width: 100%;
+  text-align: left;
+  padding: 17px 0 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.trip-link span {
+  font-size: 17px;
+}
+
+.empty-state {
+  padding: 55px 20px;
+  text-align: center;
+  border: 1px dashed #48463f;
+}
+
+.empty-icon {
+  font-size: 45px;
+}
+
+.empty-state h3 {
+  font: 700 25px 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+}
+
+.empty-state p, .modal p {
+  color: #aaa89e;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+footer {
+  min-height: 65px;
+  border-top: 1px solid #30302c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  color: #77766e;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+footer span:first-child {
+  color: var(--sand);
+  font-weight: 800;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000b;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modal {
+  width: min(100%, 440px);
+  background: #1b1c18;
+  border: 1px solid #48463f;
+  padding: 35px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-size: 27px;
+}
+
+.modal label {
+  display: block;
+  margin: 22px 0 8px;
+  color: #c8c5bb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.modal input {
+  width: 100%;
+  background: #111210;
+  border: 1px solid #45443d;
+  color: white;
+  padding: 13px;
+  outline: none;
+}
+
+.modal input:focus {
+  border-color: var(--sand);
+}
+
+.full-button {
+  width: 100%;
+  margin-top: 25px;
+}
+
+@media (max-width: 650px) {
+  .app {
+    padding: 0 5%;
+  }
+
+  .topbar {
+    height: 72px;
+  }
+
+  .brand {
+    font-size: 20px;
+  }
+
+  .brand-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 24px;
+  }
+
+  .outline-button {
+    padding: 9px;
+    font-size: 10px;
+  }
+
+  .hero {
+    min-height: 390px;
+    padding: 45px 7%;
+  }
+
+  .hero-stamp {
+    display: none;
+  }
+
+  .hero::after {
+    right: -30px;
+    bottom: -20px;
+    font-size: 190px;
+  }
+
+  .hero h1 {
+    font-size: 65px;
+  }
+
+  .section-heading {
+    align-items: start;
+    gap: 15px;
+  }
+
+  .section-heading h2 {
+    font-size: 29px;
+  }
+
+  .text-button {
+    max-width: 110px;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .trip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  footer {
+    flex-wrap: wrap;
+    padding: 20px 0;
+  }
+}
