@@ -135,18 +135,19 @@ export default function EquipmentPage({
   const tripId = trip?.id;
   const currentUid = auth.currentUser?.uid;
 
-  const members = tripMembers.map((member) => ({
-    ...member,
-    uid: member.uid || member.id,
-    displayName:
-      member.firstName ||
-      (member.uid === currentUid || member.id === currentUid
-        ? "Moi"
-        : "Rider"),
-  }));
+  const members = [
+    ...tripMembers.filter((member) => member.uid !== currentUid),
+    {
+      id: currentUid,
+      uid: currentUid,
+      firstName: "Moi",
+    },
+  ].filter((member, index, array) =>
+    array.findIndex((other) => other.uid === member.uid) === index
+  );
 
   useEffect(() => {
-    if (!tripId) return;
+    if (!tripId || !currentUid) return;
 
     const itemsRef = collection(db, "trips", tripId, "equipment");
     const configRef = doc(db, "trips", tripId, "equipment", "_config");
@@ -241,8 +242,8 @@ export default function EquipmentPage({
     }
   }
 
-  async function toggleItem(item, memberUid) {
-    if (!tripId || !currentUid || memberUid !== currentUid) return;
+  async function toggleItem(item) {
+    if (!tripId || !currentUid) return;
 
     try {
       const updated = { ...(item.broughtBy || {}) };
@@ -260,18 +261,22 @@ export default function EquipmentPage({
 
       setError("");
     } catch {
-      setError("Impossible de modifier cet élément.");
+      setError("Impossible de modifier ta case.");
     }
   }
 
   async function removeItem(item) {
     if (!tripId || !currentUid) return;
 
-    if (
-      !window.confirm(
-        `Supprimer « ${item.name} » pour tous les participants ?`
-      )
-    ) {
+    const canDelete =
+      trip.myRole === "owner" || item.createdBy === currentUid;
+
+    if (!canDelete) {
+      setError("Seul le créateur ou l'organisateur peut supprimer cet élément.");
+      return;
+    }
+
+    if (!window.confirm(`Supprimer « ${item.name} » pour tout le monde ?`)) {
       return;
     }
 
@@ -285,12 +290,23 @@ export default function EquipmentPage({
     }
   }
 
-  const departureDate =
-    typeof trip?.dates === "string" ? trip.dates : "";
+  const customItems = items.filter(
+    (item) => item.category === "➕ MATÉRIEL AJOUTÉ"
+  );
+
+  const sections = checklist.map((section) => ({
+    ...section,
+    items: items.filter(
+      (item) => item.category === section.category
+    ),
+  }));
 
   const checkedCount = items.filter(
     (item) => item.broughtBy?.[currentUid]
   ).length;
+
+  const departureDate =
+    typeof trip?.dates === "string" ? trip.dates : "";
 
   function renderTable(sectionItems) {
     return (
@@ -298,65 +314,80 @@ export default function EquipmentPage({
         <table className="equipment-table">
           <thead>
             <tr>
-              <th>Équipement</th>
+              <th className="equipment-name-column">Matériel</th>
 
               {members.map((member) => (
                 <th key={member.uid}>
-                  {member.displayName}
+                  {member.uid === currentUid
+                    ? "Moi"
+                    : member.firstName || "Rider"}
                 </th>
               ))}
 
-              <th>Action</th>
+              <th> </th>
             </tr>
           </thead>
 
           <tbody>
-            {sectionItems.map((item) => (
-              <tr key={item.id}>
-                <td className="equipment-name-cell">
-                  {item.name}
-                </td>
+            {sectionItems.map((item) => {
+              const canDelete =
+                trip.myRole === "owner" ||
+                item.createdBy === currentUid;
 
-                {members.map((member) => {
-                  const checked = Boolean(
-                    item.broughtBy?.[member.uid]
-                  );
+              return (
+                <tr key={item.id}>
+                  <td className="equipment-name-column">
+                    {item.name}
+                  </td>
 
-                  const isMe = member.uid === currentUid;
+                  {members.map((member) => {
+                    const isMe = member.uid === currentUid;
+                    const checked = Boolean(
+                      item.broughtBy?.[member.uid]
+                    );
 
-                  return (
-                    <td
-                      key={member.uid}
-                      className="equipment-check-cell"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={!isMe}
-                        onChange={() =>
-                          toggleItem(item, member.uid)
-                        }
-                        aria-label={`${item.name} - ${member.displayName}`}
-                      />
-                    </td>
-                  );
-                })}
+                    return (
+                      <td
+                        key={member.uid}
+                        className="equipment-check-cell"
+                      >
+                        {isMe ? (
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleItem(item)}
+                            aria-label={`Je prends ${item.name}`}
+                          />
+                        ) : (
+                          <span
+                            className={
+                              checked
+                                ? "equipment-other-checked"
+                                : "equipment-other-empty"
+                            }
+                          >
+                            {checked ? "✓" : "—"}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
 
-                <td className="equipment-action-cell">
-                  {(item.createdBy === currentUid ||
-                    trip.myRole === "owner") && (
-                    <button
-                      type="button"
-                      className="equipment-delete"
-                      onClick={() => removeItem(item)}
-                      title="Supprimer cet élément"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  <td className="equipment-action-cell">
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="equipment-delete"
+                        onClick={() => removeItem(item)}
+                        aria-label={`Supprimer ${item.name}`}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -396,10 +427,12 @@ export default function EquipmentPage({
         </div>
       </div>
 
-      <form
-        onSubmit={addItem}
-        className="equipment-add-form"
-      >
+      <p className="equipment-help">
+        Coche uniquement ta colonne. Les coches des autres participants
+        sont visibles en temps réel.
+      </p>
+
+      <form onSubmit={addItem} className="equipment-add-form">
         <input
           value={newItem}
           onChange={(event) => setNewItem(event.target.value)}
@@ -412,50 +445,30 @@ export default function EquipmentPage({
         </button>
       </form>
 
-      {error && (
-        <p className="equipment-error">{error}</p>
-      )}
+      {error && <p className="equipment-error">{error}</p>}
 
       {loading ? (
-        <p>Chargement de la check-list...</p>
+        <p>Préparation de la check-list...</p>
       ) : (
         <>
-          {checklist.map((section) => {
-            const sectionItems = items.filter(
-              (item) => item.category === section.category
-            );
+          {sections.map((section) => (
+            <section
+              className="equipment-category"
+              key={section.category}
+            >
+              <h3>{section.category}</h3>
+              {renderTable(section.items)}
+            </section>
+          ))}
 
-            return (
-              <section
-                className="equipment-category"
-                key={section.category}
-              >
-                <h3>{section.category}</h3>
-                {renderTable(sectionItems)}
-              </section>
-            );
-          })}
-
-          {items.some(
-            (item) => item.category === "➕ MATÉRIEL AJOUTÉ"
-          ) && (
+          {customItems.length > 0 && (
             <section className="equipment-category">
               <h3>➕ MATÉRIEL AJOUTÉ</h3>
-
-              {renderTable(
-                items.filter(
-                  (item) => item.category === "➕ MATÉRIEL AJOUTÉ"
-                )
-              )}
+              {renderTable(customItems)}
             </section>
           )}
         </>
       )}
-
-      <p className="equipment-hint">
-        Chaque participant coche sa propre colonne. Les modifications
-        sont partagées avec toute l'équipe.
-      </p>
     </div>
   );
 }
