@@ -122,7 +122,11 @@ const checklist = [
   },
 ];
 
-export default function EquipmentPage({ trip }) {
+export default function EquipmentPage({
+  trip,
+  tripMembers = [],
+  onBack,
+}) {
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("");
   const [loading, setLoading] = useState(true);
@@ -195,7 +199,9 @@ export default function EquipmentPage({ trip }) {
 
         await batch.commit();
       } catch {
-        setError("Impossible de préparer la check-list. Vérifie les règles Firebase.");
+        setError(
+          "Impossible de préparer la check-list. Vérifie les règles Firebase."
+        );
       }
     }
 
@@ -208,7 +214,7 @@ export default function EquipmentPage({ trip }) {
     event.preventDefault();
 
     const name = newItem.trim();
-    if (!name || !tripId) return;
+    if (!name || !tripId || !currentUid) return;
 
     try {
       await addDoc(collection(db, "trips", tripId, "equipment"), {
@@ -251,11 +257,13 @@ export default function EquipmentPage({ trip }) {
   }
 
   async function removeItem(item) {
-    if (!tripId) return;
+    if (!tripId || !currentUid) return;
 
-    if (!window.confirm(`Supprimer « ${item.name} » pour tout le monde ?`)) {
-      return;
-    }
+    const confirmed = window.confirm(
+      `Supprimer « ${item.name} » pour tous les participants ?`
+    );
+
+    if (!confirmed) return;
 
     try {
       await deleteDoc(
@@ -269,7 +277,9 @@ export default function EquipmentPage({ trip }) {
 
   const sections = checklist.map((section) => ({
     ...section,
-    items: items.filter((item) => item.category === section.category),
+    items: items.filter(
+      (item) => item.category === section.category
+    ),
   }));
 
   const customItems = items.filter(
@@ -285,6 +295,14 @@ export default function EquipmentPage({ trip }) {
 
   return (
     <div className="equipment-page">
+      <button
+        type="button"
+        className="text-button"
+        onClick={onBack}
+      >
+        ← Retour à l'aventure
+      </button>
+
       <h2>🏍️ CHECK-LIST BIVOUAC MOTO TRAIL</h2>
 
       <p className="equipment-date">
@@ -293,8 +311,9 @@ export default function EquipmentPage({ trip }) {
 
       <div className="equipment-progress">
         <strong>
-          {checkedCount} / {items.length} éléments pris en charge par toi
+          Ma préparation : {checkedCount} / {items.length} éléments
         </strong>
+
         <div className="equipment-progress-track">
           <div
             className="equipment-progress-fill"
@@ -307,41 +326,63 @@ export default function EquipmentPage({ trip }) {
         </div>
       </div>
 
-      <form onSubmit={addItem} className="equipment-add-form">
+      <form
+        onSubmit={addItem}
+        className="equipment-add-form"
+      >
         <input
           value={newItem}
           onChange={(event) => setNewItem(event.target.value)}
           placeholder="Ajouter un équipement..."
           maxLength={100}
         />
+
         <button type="submit" disabled={!newItem.trim()}>
           + Ajouter
         </button>
       </form>
 
-      {error && <p className="equipment-error">{error}</p>}
+      {error && (
+        <p className="equipment-error">{error}</p>
+      )}
 
       {loading ? (
         <p>Préparation de la check-list...</p>
       ) : (
         <>
           {sections.map((section) => (
-            <section className="equipment-category" key={section.category}>
+            <section
+              className="equipment-category"
+              key={section.category}
+            >
               <h3>{section.category}</h3>
 
               {section.items.map((item) => {
-                const checked = Boolean(item.broughtBy?.[currentUid]);
-                const peopleCount = Object.keys(item.broughtBy || {}).length;
+                const checked = Boolean(
+                  item.broughtBy?.[currentUid]
+                );
+
+                const peopleCount = Object.keys(
+                  item.broughtBy || {}
+                ).length;
 
                 return (
-                  <div className="equipment-item" key={item.id}>
+                  <div
+                    className="equipment-item"
+                    key={item.id}
+                  >
                     <label className="equipment-checkbox">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleItem(item)}
                       />
-                      <span className={checked ? "equipment-done" : ""}>
+
+                      <span
+                        className={
+                          checked ? "equipment-done" : ""
+                        }
+                      >
                         {item.name}
                       </span>
                     </label>
@@ -371,18 +412,31 @@ export default function EquipmentPage({ trip }) {
               <h3>➕ MATÉRIEL AJOUTÉ</h3>
 
               {customItems.map((item) => {
-                const checked = Boolean(item.broughtBy?.[currentUid]);
-                const peopleCount = Object.keys(item.broughtBy || {}).length;
+                const checked = Boolean(
+                  item.broughtBy?.[currentUid]
+                );
+
+                const peopleCount = Object.keys(
+                  item.broughtBy || {}
+                ).length;
 
                 return (
-                  <div className="equipment-item" key={item.id}>
+                  <div
+                    className="equipment-item"
+                    key={item.id}
+                  >
                     <label className="equipment-checkbox">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleItem(item)}
                       />
-                      <span className={checked ? "equipment-done" : ""}>
+
+                      <span
+                        className={
+                          checked ? "equipment-done" : ""
+                        }
+                      >
                         {item.name}
                       </span>
                     </label>
