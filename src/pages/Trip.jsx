@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
@@ -12,9 +13,12 @@ export default function Trip({
   setEditLocation,
   savingDetails,
   onSave,
+  onCreateInvite,
+  creatingInvite,
   onBack,
 }) {
   const [activePage, setActivePage] = useState("home");
+  const [copyStatus, setCopyStatus] = useState("");
 
   if (activePage === "gpx") {
     return (
@@ -32,6 +36,15 @@ export default function Trip({
         onBack={() => setActivePage("home")}
       />
     );
+  }
+
+  async function copyInviteCode() {
+    try {
+      await navigator.clipboard.writeText(trip.inviteCode);
+      setCopyStatus("Code copié !");
+    } catch (error) {
+      setCopyStatus("Copie impossible. Sélectionne le code manuellement.");
+    }
   }
 
   const sections = [
@@ -133,6 +146,67 @@ export default function Trip({
           </div>
         </article>
       </div>
+
+      <article className="trip-card" style={{ marginTop: "25px" }}>
+        <div className="trip-info">
+          <span className="eyebrow">INVITATION</span>
+          <h3>Inviter des participants</h3>
+
+          {trip.inviteCode ? (
+            <>
+              <p>Voici le code à transmettre à tes compagnons :</p>
+
+              <div
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  letterSpacing: "6px",
+                  textAlign: "center",
+                  padding: "15px",
+                  color: "#D9B65D",
+                }}
+              >
+                {trip.inviteCode}
+              </div>
+
+              <button
+                className="primary-button full-button"
+                onClick={copyInviteCode}
+              >
+                {copyStatus === "Code copié !"
+                  ? "✓ Code copié !"
+                  : "📋 Copier le code"}
+              </button>
+
+              {copyStatus && (
+                <p style={{ color: "#D9B65D", marginTop: "10px" }}>
+                  {copyStatus}
+                </p>
+              )}
+            </>
+          ) : trip.myRole === "owner" ? (
+            <>
+              <p>
+                Cette ancienne aventure n'a pas encore de code enregistré.
+              </p>
+
+              <button
+                className="primary-button full-button"
+                onClick={onCreateInvite}
+                disabled={creatingInvite}
+              >
+                {creatingInvite
+                  ? "Création du code..."
+                  : "Créer un code d'invitation →"}
+              </button>
+            </>
+          ) : (
+            <p>
+              Le code d'invitation n'est pas disponible pour cette aventure.
+            </p>
+          )}
+        </div>
+      </article>
 
       <div style={{ marginTop: "40px" }}>
         <span className="eyebrow">ORGANISATION DE L'EXPÉDITION</span>
