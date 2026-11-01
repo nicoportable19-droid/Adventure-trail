@@ -17,8 +17,13 @@ export default function Login({ onSwitch }) {
 
   useEffect(() => {
     async function checkGoogleLogin() {
-      try {
-        await getRedirectResult(auth);
+      try {const result = await getRedirectResult(auth);
+
+if (result) {
+  console.log("Google connecté :", result.user.email);
+} else {
+  console.log("Aucun résultat de redirection Google.");
+}
       } catch (err) {
         console.error("Erreur retour Google :", err);
         setError(
