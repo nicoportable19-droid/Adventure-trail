@@ -1,4 +1,4 @@
-
+```jsx
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -20,6 +20,8 @@ import Home from "./pages/Home";
 import Trip from "./pages/Trip";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+
 import "./style.css";
 import "./auth.css";
 
@@ -38,6 +40,9 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authPage, setAuthPage] = useState("login");
+
+  const [profilePseudo, setProfilePseudo] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
 
   const [createdInviteCode, setCreatedInviteCode] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
@@ -66,6 +71,7 @@ export default function App() {
   const userId = user?.uid || null;
 
   const firstName =
+    profilePseudo ||
     user?.displayName?.trim() ||
     user?.email?.split("@")[0] ||
     "Rider";
@@ -93,11 +99,39 @@ export default function App() {
         setJoinedTrips([]);
         setSelectedTrip(null);
         setTripMembers([]);
+        setProfilePseudo("");
+        setShowProfile(false);
       }
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Charger le pseudo public depuis Firestore
+  useEffect(() => {
+    if (!userId) {
+      setProfilePseudo("");
+      return;
+    }
+
+    const profileRef = doc(db, "users", userId);
+
+    const unsubscribe = onSnapshot(
+      profileRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setProfilePseudo(snapshot.data().pseudo || "");
+        } else {
+          setProfilePseudo("");
+        }
+      },
+      (error) => {
+        console.error("Lecture du profil :", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // Charger les aventures du compte connecté
   useEffect(() => {
@@ -107,8 +141,6 @@ export default function App() {
       return;
     }
 
-    let unsubscribeOwner = null;
-    let unsubscribeMembers = null;
     let cancelled = false;
 
     const ownerQuery = query(
@@ -116,7 +148,7 @@ export default function App() {
       where("ownerId", "==", userId)
     );
 
-    unsubscribeOwner = onSnapshot(
+    const unsubscribeOwner = onSnapshot(
       ownerQuery,
       (snapshot) => {
         setOwnerTrips(
@@ -138,7 +170,7 @@ export default function App() {
       where("uid", "==", userId)
     );
 
-    unsubscribeMembers = onSnapshot(
+    const unsubscribeMembers = onSnapshot(
       membersQuery,
       async (snapshot) => {
         try {
@@ -176,8 +208,8 @@ export default function App() {
 
     return () => {
       cancelled = true;
-      if (unsubscribeOwner) unsubscribeOwner();
-      if (unsubscribeMembers) unsubscribeMembers();
+      unsubscribeOwner();
+      unsubscribeMembers();
     };
   }, [userId]);
 
@@ -211,13 +243,49 @@ export default function App() {
 
     const unsubscribeMembers = onSnapshot(
       membersRef,
-      (snapshot) => {
-        setTripMembers(
-          snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          }))
-        );
+      async (snapshot) => {
+        try {
+          const members = await Promise.all(
+            snapshot.docs.map(async (item) => {
+              const member = {
+                id: item.id,
+                ...item.data(),
+              };
+
+              if (!member.uid) return member;
+
+              const profileSnapshot = await getDoc(
+                doc(db, "users", member.uid)
+              );
+
+              if (profileSnapshot.exists()) {
+                const profile = profileSnapshot.data();
+
+                return {
+                  ...member,
+                  pseudo: profile.pseudo || member.firstName || "Rider",
+                  photoURL: profile.photoURL || "",
+                };
+              }
+
+              return {
+                ...member,
+                pseudo: member.firstName || "Rider",
+              };
+            })
+          );
+
+          setTripMembers(members);
+        } catch (error) {
+          console.error("Lecture des profils des participants :", error);
+          setTripMembers(
+            snapshot.docs.map((item) => ({
+              id: item.id,
+              ...item.data(),
+              pseudo: item.data().firstName || "Rider",
+            }))
+          );
+        }
       },
       (error) => {
         console.error(error);
@@ -232,6 +300,7 @@ export default function App() {
   }, [selectedTrip?.id, userId]);
 
   function openTrip(trip) {
+    setShowProfile(false);
     setSelectedTrip(trip);
     setEditName(trip.name || "");
     setEditLocation(trip.location || "");
@@ -245,11 +314,22 @@ export default function App() {
     setErrorMessage("");
   }
 
+  function openProfile() {
+    closeTrip();
+    setShowProfile(true);
+    setErrorMessage("");
+  }
+
+  function closeProfile() {
+    setShowProfile(false);
+  }
+
   // Déconnexion
   async function handleSignOut() {
     try {
       await signOut(auth);
       closeTrip();
+      setShowProfile(false);
       setCreatedInviteCode("");
       setShowCreate(false);
       setShowJoin(false);
@@ -417,7 +497,7 @@ export default function App() {
     }
   }
 
-  // Enregistrer les modifications
+  // Enregistrer les modifications de l'aventure
   async function saveTripDetails(e) {
     e.preventDefault();
 
@@ -453,7 +533,9 @@ export default function App() {
       <main className="auth-page">
         <div className="auth-card">
           <div className="auth-brand">ADVENTURE TRAIL</div>
-          <p className="auth-description">Vérification de ta connexion...</p>
+          <p className="auth-description">
+            Vérification de ta connexion...
+          </p>
         </div>
       </main>
     );
@@ -476,6 +558,7 @@ export default function App() {
           onClick={(e) => {
             e.preventDefault();
             closeTrip();
+            closeProfile();
           }}
         >
           <span className="brand-icon">A</span>
@@ -489,6 +572,13 @@ export default function App() {
           <span className="user-welcome">
             {firstName}
           </span>
+
+          <button
+            className="outline-button"
+            onClick={openProfile}
+          >
+            Mon profil
+          </button>
 
           <button
             className="outline-button"
@@ -506,7 +596,12 @@ export default function App() {
         </div>
       </header>
 
-      {selectedTrip ? (
+      {showProfile ? (
+        <Profile
+          user={user}
+          onBack={closeProfile}
+        />
+      ) : selectedTrip ? (
         <Trip
           trip={selectedTrip}
           tripMembers={tripMembers}
@@ -692,3 +787,4 @@ export default function App() {
     </main>
   );
 }
+```
