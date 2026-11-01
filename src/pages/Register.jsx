@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   updateProfile,
 } from "firebase/auth";
+
 import { auth } from "../firebase";
 
 export default function Register({ onGoToLogin }) {
@@ -19,6 +20,11 @@ export default function Register({ onGoToLogin }) {
   async function handleRegister(event) {
     event.preventDefault();
     setError("");
+
+    if (!firstName.trim()) {
+      setError("Merci de renseigner ton prénom.");
+      return;
+    }
 
     if (password.length < 6) {
       setError("Le mot de passe doit contenir au moins 6 caractères.");
@@ -43,6 +49,8 @@ export default function Register({ onGoToLogin }) {
         displayName: firstName.trim(),
       });
     } catch (err) {
+      console.error("Erreur inscription :", err);
+
       if (err.code === "auth/email-already-in-use") {
         setError("Cette adresse e-mail possède déjà un compte.");
       } else if (err.code === "auth/invalid-email") {
@@ -50,7 +58,10 @@ export default function Register({ onGoToLogin }) {
       } else if (err.code === "auth/weak-password") {
         setError("Choisis un mot de passe plus sécurisé.");
       } else {
-        setError("Impossible de créer le compte. Réessaie.");
+        setError(
+          "Erreur d'inscription : " +
+          (err.code || err.message || "erreur inconnue")
+        );
       }
     } finally {
       setLoading(false);
@@ -63,10 +74,27 @@ export default function Register({ onGoToLogin }) {
 
     try {
       const provider = new GoogleAuthProvider();
+
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+
       await signInWithPopup(auth, provider);
+
     } catch (err) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        setError("L'inscription avec Google a échoué.");
+      console.error("Erreur inscription Google :", err);
+
+      if (err.code === "auth/popup-closed-by-user") {
+        setError("La fenêtre Google a été fermée avant la connexion.");
+      } else if (err.code === "auth/popup-blocked") {
+        setError("Le navigateur a bloqué la fenêtre Google.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError("Ce domaine n'est pas autorisé dans Firebase.");
+      } else {
+        setError(
+          "Erreur Google : " +
+          (err.code || err.message || "erreur inconnue")
+        );
       }
     } finally {
       setLoading(false);
@@ -81,8 +109,12 @@ export default function Register({ onGoToLogin }) {
           <span>ADVENTURE TRAIL</span>
         </div>
 
-        <p className="auth-eyebrow">PRÉPARE TA PROCHAINE AVENTURE</p>
+        <p className="auth-eyebrow">
+          PRÉPARE TA PROCHAINE AVENTURE
+        </p>
+
         <h1>Créer un compte</h1>
+
         <p className="auth-description">
           Rejoins ton équipe et organise tes voyages à moto.
         </p>
@@ -95,6 +127,7 @@ export default function Register({ onGoToLogin }) {
 
         <form onSubmit={handleRegister}>
           <label htmlFor="register-name">Ton prénom</label>
+
           <input
             id="register-name"
             type="text"
@@ -106,6 +139,7 @@ export default function Register({ onGoToLogin }) {
           />
 
           <label htmlFor="register-email">Adresse e-mail</label>
+
           <input
             id="register-email"
             type="email"
@@ -117,6 +151,7 @@ export default function Register({ onGoToLogin }) {
           />
 
           <label htmlFor="register-password">Mot de passe</label>
+
           <input
             id="register-password"
             type="password"
@@ -131,6 +166,7 @@ export default function Register({ onGoToLogin }) {
           <label htmlFor="register-confirm-password">
             Confirmer le mot de passe
           </label>
+
           <input
             id="register-confirm-password"
             type="password"
@@ -161,12 +197,16 @@ export default function Register({ onGoToLogin }) {
           disabled={loading}
         >
           <span className="google-g">G</span>
-          Continuer avec Google
+          {loading ? "Connexion..." : "Continuer avec Google"}
         </button>
 
         <p className="auth-switch">
           Tu as déjà un compte ?
-          <button type="button" onClick={onGoToLogin}>
+          <button
+            type="button"
+            onClick={onGoToLogin}
+            disabled={loading}
+          >
             Se connecter
           </button>
         </p>
