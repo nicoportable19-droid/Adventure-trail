@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { db, connectAnonymousUser } from "./firebase";
+import { auth, db } from "./firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
   collectionGroup,
@@ -17,7 +18,10 @@ import {
 
 import Home from "./pages/Home";
 import Trip from "./pages/Trip";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import "./style.css";
+import "./auth.css";
 
 function generateInviteCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -31,12 +35,15 @@ function generateInviteCode() {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authPage, setAuthPage] = useState("login");
+
   const [createdInviteCode, setCreatedInviteCode] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
 
   const [ownerTrips, setOwnerTrips] = useState([]);
   const [joinedTrips, setJoinedTrips] = useState([]);
-  const [userId, setUserId] = useState(null);
 
   const [firebaseStatus, setFirebaseStatus] = useState("Connexion...");
   const [errorMessage, setErrorMessage] = useState("");
@@ -46,8 +53,6 @@ export default function App() {
 
   const [tripName, setTripName] = useState("");
   const [tripLocation, setTripLocation] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [joinFirstName, setJoinFirstName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -58,6 +63,13 @@ export default function App() {
   const [editLocation, setEditLocation] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
 
+  const userId = user?.uid || null;
+
+  const firstName =
+    user?.displayName?.trim() ||
+    user?.email?.split("@")[0] ||
+    "Rider";
+
   const trips = useMemo(() => {
     const allTrips = [...ownerTrips, ...joinedTrips];
 
@@ -66,102 +78,112 @@ export default function App() {
     );
   }, [ownerTrips, joinedTrips]);
 
+  // Surveiller la connexion au compte Firebase
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+
+      if (currentUser) {
+        setFirebaseStatus("Connecté à Firebase");
+        setErrorMessage("");
+      } else {
+        setFirebaseStatus("Non connecté");
+        setOwnerTrips([]);
+        setJoinedTrips([]);
+        setSelectedTrip(null);
+        setTripMembers([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Charger les aventures du compte connecté
+  useEffect(() => {
+    if (!userId) {
+      setOwnerTrips([]);
+      setJoinedTrips([]);
+      return;
+    }
+
     let unsubscribeOwner = null;
     let unsubscribeMembers = null;
     let cancelled = false;
 
-    async function startFirebase() {
-      try {
-        const result = await connectAnonymousUser();
-        const user = result.user;
+    const ownerQuery = query(
+      collection(db, "trips"),
+      where("ownerId", "==", userId)
+    );
 
-        if (cancelled) return;
-
-        setUserId(user.uid);
-        setFirebaseStatus("Connecté à Firebase");
-
-        const ownerQuery = query(
-          collection(db, "trips"),
-          where("ownerId", "==", user.uid)
+    unsubscribeOwner = onSnapshot(
+      ownerQuery,
+      (snapshot) => {
+        setOwnerTrips(
+          snapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data(),
+            myRole: "owner",
+          }))
         );
-
-        unsubscribeOwner = onSnapshot(
-          ownerQuery,
-          (snapshot) => {
-            setOwnerTrips(
-              snapshot.docs.map((item) => ({
-                id: item.id,
-                ...item.data(),
-                myRole: "owner",
-              }))
-            );
-          },
-          (error) => {
-            console.error("Lecture aventures créées :", error);
-            setErrorMessage("Lecture aventures créées : " + error.message);
-          }
-        );
-
-        const membersQuery = query(
-          collectionGroup(db, "members"),
-          where("uid", "==", user.uid)
-        );
-
-        unsubscribeMembers = onSnapshot(
-          membersQuery,
-          async (snapshot) => {
-            try {
-              const results = await Promise.all(
-                snapshot.docs.map(async (memberDoc) => {
-                  const tripRef = memberDoc.ref.parent.parent;
-
-                  if (!tripRef) return null;
-
-                  const tripSnapshot = await getDoc(tripRef);
-
-                  if (!tripSnapshot.exists()) return null;
-
-                  return {
-                    id: tripSnapshot.id,
-                    ...tripSnapshot.data(),
-                    myRole: memberDoc.data().role || "member",
-                  };
-                })
-              );
-
-              if (!cancelled) {
-                setJoinedTrips(results.filter(Boolean));
-              }
-            } catch (error) {
-              console.error("Lecture d'une aventure :", error);
-              setErrorMessage("Lecture d'une aventure : " + error.message);
-            }
-          },
-          (error) => {
-            console.error("Lecture des participations :", error);
-            setErrorMessage("Lecture des participations : " + error.message);
-          }
-        );
-      } catch (error) {
-        console.error("Erreur Firebase :", error);
-        setFirebaseStatus("Erreur Firebase : " + error.code);
-        setErrorMessage(error.message);
+      },
+      (error) => {
+        console.error("Lecture aventures créées :", error);
+        setErrorMessage("Lecture aventures créées : " + error.message);
       }
-    }
+    );
 
-    startFirebase();
+    const membersQuery = query(
+      collectionGroup(db, "members"),
+      where("uid", "==", userId)
+    );
+
+    unsubscribeMembers = onSnapshot(
+      membersQuery,
+      async (snapshot) => {
+        try {
+          const results = await Promise.all(
+            snapshot.docs.map(async (memberDoc) => {
+              const tripRef = memberDoc.ref.parent.parent;
+
+              if (!tripRef) return null;
+
+              const tripSnapshot = await getDoc(tripRef);
+
+              if (!tripSnapshot.exists()) return null;
+
+              return {
+                id: tripSnapshot.id,
+                ...tripSnapshot.data(),
+                myRole: memberDoc.data().role || "member",
+              };
+            })
+          );
+
+          if (!cancelled) {
+            setJoinedTrips(results.filter(Boolean));
+          }
+        } catch (error) {
+          console.error("Lecture d'une aventure :", error);
+          setErrorMessage("Lecture d'une aventure : " + error.message);
+        }
+      },
+      (error) => {
+        console.error("Lecture des participations :", error);
+        setErrorMessage("Lecture des participations : " + error.message);
+      }
+    );
 
     return () => {
       cancelled = true;
       if (unsubscribeOwner) unsubscribeOwner();
       if (unsubscribeMembers) unsubscribeMembers();
     };
-  }, []);
+  }, [userId]);
 
   // Mise à jour en temps réel de la page détaillée
   useEffect(() => {
-    if (!selectedTrip?.id) return;
+    if (!selectedTrip?.id || !userId) return;
 
     const tripRef = doc(db, "trips", selectedTrip.id);
     const membersRef = collection(
@@ -207,7 +229,7 @@ export default function App() {
       unsubscribeTrip();
       unsubscribeMembers();
     };
-  }, [selectedTrip?.id]);
+  }, [selectedTrip?.id, userId]);
 
   function openTrip(trip) {
     setSelectedTrip(trip);
@@ -223,16 +245,26 @@ export default function App() {
     setErrorMessage("");
   }
 
+  // Déconnexion
+  async function handleSignOut() {
+    try {
+      await signOut(auth);
+      closeTrip();
+      setCreatedInviteCode("");
+      setShowCreate(false);
+      setShowJoin(false);
+      setAuthPage("login");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Impossible de se déconnecter : " + error.message);
+    }
+  }
+
   // Créer un road trip
   async function createTrip(e) {
     e.preventDefault();
 
-    if (
-      !tripName.trim() ||
-      !firstName.trim() ||
-      !userId ||
-      saving
-    ) return;
+    if (!tripName.trim() || !userId || saving) return;
 
     setSaving(true);
     setErrorMessage("");
@@ -262,7 +294,7 @@ export default function App() {
         doc(db, "trips", tripRef.id, "members", userId),
         {
           uid: userId,
-          firstName: firstName.trim(),
+          firstName,
           role: "owner",
           joinedAt: serverTimestamp(),
         }
@@ -276,7 +308,6 @@ export default function App() {
 
       setTripName("");
       setTripLocation("");
-      setFirstName("");
       setShowCreate(false);
 
       setCreatedInviteCode(code);
@@ -336,12 +367,7 @@ export default function App() {
   async function joinTrip(e) {
     e.preventDefault();
 
-    if (
-      !inviteCode.trim() ||
-      !joinFirstName.trim() ||
-      !userId ||
-      saving
-    ) return;
+    if (!inviteCode.trim() || !userId || saving) return;
 
     setSaving(true);
     setErrorMessage("");
@@ -365,7 +391,7 @@ export default function App() {
         doc(db, "trips", tripId, "members", userId),
         {
           uid: userId,
-          firstName: joinFirstName.trim(),
+          firstName,
           role: "member",
           inviteCode: code,
           joinedAt: serverTimestamp(),
@@ -375,7 +401,6 @@ export default function App() {
       const tripSnapshot = await getDoc(doc(db, "trips", tripId));
 
       setInviteCode("");
-      setJoinFirstName("");
       setShowJoin(false);
 
       alert(
@@ -423,6 +448,25 @@ export default function App() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <main className="auth-page">
+        <div className="auth-card">
+          <div className="auth-brand">ADVENTURE TRAIL</div>
+          <p className="auth-description">Vérification de ta connexion...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return authPage === "register" ? (
+      <Register onGoToLogin={() => setAuthPage("login")} />
+    ) : (
+      <Login onGoToRegister={() => setAuthPage("register")} />
+    );
+  }
+
   return (
     <main className="app">
       <header className="topbar">
@@ -441,12 +485,25 @@ export default function App() {
           </span>
         </a>
 
-        <button
-          className="outline-button"
-          onClick={() => setShowJoin(true)}
-        >
-          Rejoindre avec un code
-        </button>
+        <div className="topbar-actions">
+          <span className="user-welcome">
+            {firstName}
+          </span>
+
+          <button
+            className="outline-button"
+            onClick={() => setShowJoin(true)}
+          >
+            Rejoindre avec un code
+          </button>
+
+          <button
+            className="outline-button"
+            onClick={handleSignOut}
+          >
+            Déconnexion
+          </button>
+        </div>
       </header>
 
       {selectedTrip ? (
@@ -501,13 +558,9 @@ export default function App() {
             <span className="eyebrow">NOUVELLE EXPÉDITION</span>
             <h2>Créer un road trip</h2>
 
-            <label>Ton prénom</label>
-            <input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Ex. : Alex"
-              required
-            />
+            <p>
+              Ton aventure sera créée avec ton compte {firstName}.
+            </p>
 
             <label>Nom de l'aventure</label>
             <input
@@ -556,16 +609,8 @@ export default function App() {
             <span className="eyebrow">REJOINDRE UNE ÉQUIPE</span>
             <h2>Bienvenue, rider !</h2>
             <p>
-              Entre ton prénom et le code transmis par l'organisateur.
+              Entre le code transmis par l'organisateur.
             </p>
-
-            <label>Ton prénom</label>
-            <input
-              value={joinFirstName}
-              onChange={(e) => setJoinFirstName(e.target.value)}
-              placeholder="Ex. : Alex"
-              required
-            />
 
             <label>Code d'invitation</label>
             <input
