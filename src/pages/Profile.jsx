@@ -1,4 +1,3 @@
-```jsx
 import { useEffect, useState } from "react";
 import {
   doc,
@@ -552,4 +551,3 @@ export default function Profile({ user, onBack }) {
     </section>
   );
 }
-```
