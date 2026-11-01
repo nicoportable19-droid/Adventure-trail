@@ -19,28 +19,60 @@
   margin-top: 18px;
 }
 
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.calendar-view-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #111210;
+  border: 1px solid #34352f;
+  border-radius: 10px;
+}
+
+.calendar-view-switch button {
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: #c8c3b5;
+  background: transparent;
+  cursor: pointer;
+}
+
+.calendar-view-switch button.selected {
+  color: #171710;
+  background: #D9B65D;
+  font-weight: 700;
+}
+
 .calendar-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
-  margin-bottom: 18px;
 }
 
 .calendar-toolbar h3 {
   margin: 0;
   text-transform: capitalize;
   text-align: center;
+  min-width: 115px;
 }
 
 .calendar-nav {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border: 1px solid rgba(217, 182, 93, 0.35);
-  border-radius: 10px;
+  border-radius: 9px;
   color: #D9B65D;
   background: #111210;
-  font-size: 28px;
+  font-size: 26px;
   cursor: pointer;
 }
 
@@ -60,37 +92,35 @@
 
 .calendar-day {
   min-width: 0;
-  min-height: 58px;
+  min-height: 52px;
   border: 1px solid #34352f;
   border-radius: 9px;
   background: #111210;
   color: #f4f2ed;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   cursor: pointer;
 }
 
-.calendar-day small {
-  font-size: 10px;
-  color: #c8c3b5;
-}
-
-.calendar-day.outside-month {
-  opacity: 0.35;
+.calendar-day.team-availability {
+  background: #E8CC82;
+  border-color: #F1DDAA;
+  color: #211d12;
 }
 
 .calendar-day.my-availability {
-  border-color: #D9B65D;
-  background: rgba(217, 182, 93, 0.16);
+  background: #D9B65D;
+  border-color: #E8CC82;
+  color: #211d12;
+  font-weight: 700;
 }
 
 .calendar-day.common-availability {
-  border-color: #e8cc82;
-  background: #8a6d2e;
-  color: #fff;
+  background: #B89545;
+  border-color: #D9B65D;
+  color: #17150f;
+  font-weight: 800;
 }
 
 .calendar-day:disabled {
@@ -98,11 +128,62 @@
   opacity: 0.7;
 }
 
+.calendar-empty {
+  min-height: 1px;
+}
+
+.calendar-year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.calendar-mini-month {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #34352f;
+  border-radius: 12px;
+  background: #141512;
+}
+
+.calendar-mini-title {
+  display: block;
+  width: 100%;
+  padding: 4px 0 10px;
+  border: 0;
+  background: transparent;
+  color: #D9B65D;
+  text-align: center;
+  text-transform: capitalize;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calendar-grid-compact {
+  gap: 3px;
+}
+
+.calendar-grid-compact .calendar-weekday {
+  font-size: 9px;
+  padding: 3px 0 5px;
+}
+
+.calendar-grid-compact .calendar-day {
+  min-height: 27px;
+  border-radius: 5px;
+  font-size: 10px;
+  padding: 0;
+}
+
+.calendar-grid-compact .calendar-empty {
+  min-height: 1px;
+}
+
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 18px;
+  gap: 14px;
+  margin-top: 20px;
   color: #c8c3b5;
   font-size: 12px;
 }
@@ -115,9 +196,13 @@
 
 .legend-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.legend-dot.team {
+  background: #E8CC82;
 }
 
 .legend-dot.mine {
@@ -125,7 +210,7 @@
 }
 
 .legend-dot.common {
-  background: #e8cc82;
+  background: #B89545;
 }
 
 .calendar-help {
@@ -158,7 +243,23 @@
   text-align: right;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 760px) {
+  .calendar-year-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .calendar-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-toolbar {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 420px) {
   .calendar-card {
     padding: 12px;
   }
@@ -168,13 +269,18 @@
   }
 
   .calendar-day {
-    min-height: 48px;
+    min-height: 43px;
     border-radius: 7px;
     font-size: 13px;
   }
 
-  .calendar-day small {
-    font-size: 9px;
+  .calendar-year-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-grid-compact .calendar-day {
+    min-height: 34px;
+    font-size: 12px;
   }
 
   .calendar-member-row {
