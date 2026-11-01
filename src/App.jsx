@@ -98,8 +98,8 @@ export default function App() {
             );
           },
           (error) => {
-            console.error(error);
-            setErrorMessage(error.message);
+            console.error("Lecture aventures créées :", error);
+            setErrorMessage("Lecture aventures créées : " + error.message);
           }
         );
 
@@ -134,13 +134,13 @@ export default function App() {
                 setJoinedTrips(results.filter(Boolean));
               }
             } catch (error) {
-              console.error(error);
-              setErrorMessage(error.message);
+              console.error("Lecture d'une aventure :", error);
+              setErrorMessage("Lecture d'une aventure : " + error.message);
             }
           },
           (error) => {
-            console.error(error);
-            setErrorMessage(error.message);
+            console.error("Lecture des participations :", error);
+            setErrorMessage("Lecture des participations : " + error.message);
           }
         );
       } catch (error) {
