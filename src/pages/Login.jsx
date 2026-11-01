@@ -1,10 +1,9 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
 } from "firebase/auth";
 
 import { auth } from "../firebase";
@@ -14,23 +13,6 @@ export default function Login({ onGoToRegister }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Vérifie le retour après une connexion Google
-  useEffect(() => {
-    async function checkGoogleLogin() {
-      try {
-        await getRedirectResult(auth);
-      } catch (err) {
-        console.error("Erreur Google :", err);
-        setError(
-          "Connexion Google impossible : " +
-          (err.code || err.message || "erreur inconnue")
-        );
-      }
-    }
-
-    checkGoogleLogin();
-  }, []);
 
   // Connexion avec e-mail et mot de passe
   async function handleEmailLogin(e) {
@@ -47,38 +29,61 @@ export default function Login({ onGoToRegister }) {
     } catch (err) {
       console.error("Erreur connexion :", err);
 
-      if (err.code === "auth/invalid-credential") {
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/wrong-password"
+      ) {
         setError("Adresse e-mail ou mot de passe incorrect.");
       } else if (err.code === "auth/user-not-found") {
         setError("Aucun compte ne correspond à cette adresse.");
       } else if (err.code === "auth/too-many-requests") {
         setError("Trop de tentatives. Réessaie plus tard.");
       } else {
-        setError(err.message || "Une erreur est survenue.");
+        setError(
+          "Erreur de connexion : " +
+          (err.code || err.message || "erreur inconnue")
+        );
       }
-
+    } finally {
       setLoading(false);
     }
   }
 
-  // Connexion avec Google
+  // Connexion avec Google dans une fenêtre popup
   async function handleGoogleLogin() {
     setError("");
     setLoading(true);
 
     try {
       const provider = new GoogleAuthProvider();
+
       provider.setCustomParameters({
         prompt: "select_account",
       });
 
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      console.log(
+        "Connexion Google réussie :",
+        result.user.email
+      );
+
     } catch (err) {
       console.error("Erreur Google :", err);
-      setError(
-        "Connexion Google impossible : " +
-        (err.code || err.message || "erreur inconnue")
-      );
+
+      if (err.code === "auth/popup-closed-by-user") {
+        setError("La fenêtre Google a été fermée avant la connexion.");
+      } else if (err.code === "auth/popup-blocked") {
+        setError("Le navigateur a bloqué la fenêtre Google. Autorise les fenêtres popup.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError("Ce domaine n'est pas autorisé dans Firebase Authentication.");
+      } else {
+        setError(
+          "Erreur Google : " +
+          (err.code || err.message || "erreur inconnue")
+        );
+      }
+    } finally {
       setLoading(false);
     }
   }
@@ -104,10 +109,13 @@ export default function Login({ onGoToRegister }) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
-          style={styles.googleButton}
+          style={{
+            ...styles.googleButton,
+            opacity: loading ? 0.6 : 1,
+          }}
         >
           <span style={styles.googleIcon}>G</span>
-          Continuer avec Google
+          {loading ? "Connexion..." : "Continuer avec Google"}
         </button>
 
         <div style={styles.separator}>
@@ -150,15 +158,17 @@ export default function Login({ onGoToRegister }) {
           <button
             type="submit"
             disabled={loading}
-            style={styles.submitButton}
+            style={{
+              ...styles.submitButton,
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? "Connexion..." : "Se connecter →"}
           </button>
         </form>
 
         <p style={styles.registerText}>
-          Pas encore de compte ?
-          {" "}
+          Pas encore de compte ?{" "}
           <button
             type="button"
             onClick={onGoToRegister}
