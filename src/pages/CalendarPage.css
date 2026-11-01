@@ -47,7 +47,7 @@
 
 .calendar-view-switch button.selected {
   color: #171710;
-  background: #D9B65D;
+  background: #D9A92E;
   font-weight: 700;
 }
 
@@ -70,7 +70,7 @@
   height: 38px;
   border: 1px solid rgba(217, 182, 93, 0.35);
   border-radius: 9px;
-  color: #D9B65D;
+  color: #D9A92E;
   background: #111210;
   font-size: 26px;
   cursor: pointer;
@@ -104,22 +104,22 @@
 }
 
 .calendar-day.team-availability {
-  background: #E8CC82;
-  border-color: #F1DDAA;
+  background: #F3DEA0;
+  border-color: #FFF0C8;
   color: #211d12;
 }
 
 .calendar-day.my-availability {
-  background: #D9B65D;
-  border-color: #E8CC82;
+  background: #D9A92E;
+  border-color: #F3DEA0;
   color: #211d12;
   font-weight: 700;
 }
 
 .calendar-day.common-availability {
-  background: #B89545;
-  border-color: #D9B65D;
-  color: #17150f;
+  background: #A87518;
+  border-color: #D9A92E;
+  color: #FFFFFF;
   font-weight: 800;
 }
 
@@ -152,7 +152,7 @@
   padding: 4px 0 10px;
   border: 0;
   background: transparent;
-  color: #D9B65D;
+  color: #D9A92E;
   text-align: center;
   text-transform: capitalize;
   font-weight: 700;
@@ -202,15 +202,15 @@
 }
 
 .legend-dot.team {
-  background: #E8CC82;
+  background: #F3DEA0;
 }
 
 .legend-dot.mine {
-  background: #D9B65D;
+  background: #D9A92E;
 }
 
 .legend-dot.common {
-  background: #B89545;
+  background: #A87518;
 }
 
 .calendar-help {
