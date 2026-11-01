@@ -230,16 +230,16 @@ export default function Trip({
         </article>
       </div>
 
-      {/* PARTICIPANTS ET CODE DE PARTAGE */}
+      {/* ÉQUIPE ET CODE DE PARTAGE */}
       <article className="trip-card" style={{ marginTop: "25px" }}>
         <div className="trip-info">
-          <span className="eyebrow">PARTICIPANTS</span>
-          <h3>Rejoindre l'aventure</h3>
+          <span className="eyebrow">L'ÉQUIPE</span>
+          <h3>Participants et partage</h3>
 
           {trip.inviteCode ? (
             <>
               <p>
-                Partage ce code avec tes compagnons pour les inviter :
+                Invite tes compagnons avec ce code :
               </p>
 
               <button
@@ -260,7 +260,7 @@ export default function Trip({
           ) : trip.myRole === "owner" ? (
             <>
               <p>
-                Cette ancienne aventure n'a pas encore de code de partage.
+                Aucun code de partage n'est encore créé pour cette aventure.
               </p>
 
               <button
@@ -278,6 +278,37 @@ export default function Trip({
               Le code de partage n'est pas disponible pour cette aventure.
             </p>
           )}
+
+          <div
+            style={{
+              marginTop: "25px",
+              paddingTop: "20px",
+              borderTop: "1px solid rgba(217, 182, 93, 0.2)",
+            }}
+          >
+            <h3 style={{ marginBottom: "15px" }}>
+              Membres ({tripMembers.length})
+            </h3>
+
+            {tripMembers.length === 0 ? (
+              <p>Chargement des participants...</p>
+            ) : (
+              <div className="trip-grid">
+                {tripMembers.map((member) => (
+                  <article className="trip-card" key={member.id}>
+                    <div className="trip-info">
+                      <h3>👤 {member.firstName || "Rider"}</h3>
+                      <p className="trip-location">
+                        {member.role === "owner"
+                          ? "Organisateur"
+                          : "Participant"}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </article>
 
@@ -311,31 +342,6 @@ export default function Trip({
             </button>
           ))}
         </div>
-      </div>
-
-      {/* ÉQUIPE */}
-      <div style={{ marginTop: "40px" }}>
-        <span className="eyebrow">L'ÉQUIPE</span>
-        <h2>Participants ({tripMembers.length})</h2>
-
-        {tripMembers.length === 0 ? (
-          <p>Chargement des participants...</p>
-        ) : (
-          <div className="trip-grid">
-            {tripMembers.map((member) => (
-              <article className="trip-card" key={member.id}>
-                <div className="trip-info">
-                  <h3>👤 {member.firstName || "Rider"}</h3>
-                  <p className="trip-location">
-                    {member.role === "owner"
-                      ? "Organisateur"
-                      : "Participant"}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
       </div>
     </section>
   );
