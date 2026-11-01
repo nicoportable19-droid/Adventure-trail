@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import "./CalendarPage.css";
 
-const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
 function dateKey(date) {
   const year = date.getFullYear();
@@ -18,12 +18,37 @@ function dateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+function getMonthDays(year, month) {
+  const first = new Date(year, month, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const count = new Date(year, month + 1, 0).getDate();
+
+  return [
+    ...Array(offset).fill(null),
+    ...Array.from({ length: count }, (_, index) => new Date(year, month, index + 1)),
+  ];
+}
+
+function availabilityClass(key, availability, currentUid, teamUids) {
+  const available = Object.values(availability).filter((member) =>
+    member.dates.includes(key)
+  );
+  const hasMe = available.some((member) => member.uid === currentUid);
+  const allTeamAvailable =
+    teamUids.length > 0 &&
+    teamUids.every((uid) =>
+      available.some((member) => member.uid === uid)
+    );
+
+  if (allTeamAvailable) return "common-availability";
+  if (hasMe) return "my-availability";
+  if (available.length > 0) return "team-availability";
+  return "";
 }
 
 export default function CalendarPage({ trip, tripMembers = [], onBack }) {
-  const [displayMonth, setDisplayMonth] = useState(() => startOfMonth(new Date()));
+  const [displayDate, setDisplayDate] = useState(() => new Date());
+  const [view, setView] = useState("month");
   const [availability, setAvailability] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -33,14 +58,8 @@ export default function CalendarPage({ trip, tripMembers = [], onBack }) {
   useEffect(() => {
     if (!trip?.id) return undefined;
 
-    const availabilityRef = collection(
-      db,
-      "trips",
-      trip.id,
-      "availability"
-    );
-
-    const unsubscribe = onSnapshot(
+    const availabilityRef = collection(db, "trips", trip.id, "availability");
+    return onSnapshot(
       availabilityRef,
       (snapshot) => {
         const next = {};
@@ -59,30 +78,15 @@ export default function CalendarPage({ trip, tripMembers = [], onBack }) {
         setError("Impossible de charger les disponibilités : " + firebaseError.message);
       }
     );
-
-    return unsubscribe;
   }, [trip?.id]);
 
   const myDates = availability[currentUid]?.dates || [];
 
-  const calendarDays = useMemo(() => {
-    const first = startOfMonth(displayMonth);
-    const mondayOffset = (first.getDay() + 6) % 7;
-    const gridStart = new Date(first);
-    gridStart.setDate(first.getDate() - mondayOffset);
-
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(gridStart);
-      date.setDate(gridStart.getDate() + index);
-      return {
-        date,
-        key: dateKey(date),
-        inMonth: date.getMonth() === displayMonth.getMonth(),
-      };
-    });
-  }, [displayMonth]);
-
-  const memberCount = Math.max(tripMembers.length, 1);
+  const teamUids = useMemo(() => {
+    const ids = tripMembers.map((member) => member.uid).filter(Boolean);
+    if (currentUid && !ids.includes(currentUid)) ids.push(currentUid);
+    return [...new Set(ids)];
+  }, [tripMembers, currentUid]);
 
   async function toggleDate(key) {
     if (!currentUid || saving) return;
@@ -93,7 +97,6 @@ export default function CalendarPage({ trip, tripMembers = [], onBack }) {
 
     setSaving(true);
     setError("");
-
     try {
       const myMember = tripMembers.find((member) => member.uid === currentUid);
       await setDoc(
@@ -114,16 +117,58 @@ export default function CalendarPage({ trip, tripMembers = [], onBack }) {
     }
   }
 
-  function changeMonth(offset) {
-    setDisplayMonth((current) =>
-      new Date(current.getFullYear(), current.getMonth() + offset, 1)
+  function movePeriod(amount) {
+    setDisplayDate((current) =>
+      view === "month"
+        ? new Date(current.getFullYear(), current.getMonth() + amount, 1)
+        : new Date(current.getFullYear() + amount, current.getMonth(), 1)
     );
   }
 
-  const monthLabel = displayMonth.toLocaleDateString("fr-FR", {
+  function changeView(nextView) {
+    setView(nextView);
+  }
+
+  const monthLabel = displayDate.toLocaleDateString("fr-FR", {
     month: "long",
     year: "numeric",
   });
+
+  function renderMonthGrid(year, month, compact = false) {
+    const days = getMonthDays(year, month);
+    return (
+      <div className={`calendar-grid ${compact ? "calendar-grid-compact" : ""}`}>
+        {WEEKDAYS.map((day, index) => (
+          <div className="calendar-weekday" key={`${day}-${index}`}>{day}</div>
+        ))}
+        {days.map((date, index) => {
+          if (!date) return <span className="calendar-empty" key={`empty-${index}`} />;
+          const key = dateKey(date);
+          const statusClass = availabilityClass(key, availability, currentUid, teamUids);
+          const isMine = myDates.includes(key);
+
+          return (
+            <button
+              type="button"
+              key={key}
+              className={`calendar-day ${statusClass}`}
+              onClick={() => toggleDate(key)}
+              disabled={!currentUid || saving}
+              title={`${date.toLocaleDateString("fr-FR")} : ${
+                Object.values(availability)
+                  .filter((member) => member.dates.includes(key))
+                  .map((member) => member.firstName)
+                  .join(", ") || "Aucune disponibilité"
+              }${isMine ? " — ta disponibilité" : ""}`}
+              aria-label={`${date.getDate()} ${date.toLocaleDateString("fr-FR", { month: "long" })}`}
+            >
+              <span>{date.getDate()}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <section className="calendar-page">
@@ -135,79 +180,91 @@ export default function CalendarPage({ trip, tripMembers = [], onBack }) {
         <span className="eyebrow">ORGANISATION DE L'EXPÉDITION</span>
         <h2>Disponibilités</h2>
         <p className="trip-location">
-          Sélectionne les jours où tu peux participer. Les dates communes
-          apparaîtront automatiquement.
+          Chaque participant voit les disponibilités de toute l'équipe.
+          Appuie sur une date pour ajouter ou retirer ta propre disponibilité.
         </p>
       </header>
 
       {error && <p className="calendar-error">{error}</p>}
 
       <article className="calendar-card">
-        <div className="calendar-toolbar">
-          <button
-            type="button"
-            className="calendar-nav"
-            onClick={() => changeMonth(-1)}
-            aria-label="Mois précédent"
-          >
-            ‹
-          </button>
-          <h3>{monthLabel}</h3>
-          <button
-            type="button"
-            className="calendar-nav"
-            onClick={() => changeMonth(1)}
-            aria-label="Mois suivant"
-          >
-            ›
-          </button>
+        <div className="calendar-controls">
+          <div className="calendar-view-switch">
+            <button
+              type="button"
+              className={view === "month" ? "selected" : ""}
+              onClick={() => changeView("month")}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              className={view === "year" ? "selected" : ""}
+              onClick={() => changeView("year")}
+            >
+              Annuel
+            </button>
+          </div>
+
+          <div className="calendar-toolbar">
+            <button
+              type="button"
+              className="calendar-nav"
+              onClick={() => movePeriod(-1)}
+              aria-label={view === "month" ? "Mois précédent" : "Année précédente"}
+            >
+              ‹
+            </button>
+            <h3>
+              {view === "month"
+                ? monthLabel
+                : displayDate.getFullYear()}
+            </h3>
+            <button
+              type="button"
+              className="calendar-nav"
+              onClick={() => movePeriod(1)}
+              aria-label={view === "month" ? "Mois suivant" : "Année suivante"}
+            >
+              ›
+            </button>
+          </div>
         </div>
 
-        <div className="calendar-grid">
-          {WEEKDAYS.map((day) => (
-            <div className="calendar-weekday" key={day}>{day}</div>
-          ))}
-
-          {calendarDays.map(({ date, key, inMonth }) => {
-            const availableMembers = Object.values(availability).filter(
-              (member) => member.dates.includes(key)
-            );
-            const isMine = myDates.includes(key);
-            const isCommon =
-              tripMembers.length > 0 &&
-              availableMembers.length === tripMembers.length;
-
-            return (
-              <button
-                type="button"
-                key={key}
-                className={[
-                  "calendar-day",
-                  !inMonth ? "outside-month" : "",
-                  isMine ? "my-availability" : "",
-                  isCommon ? "common-availability" : "",
-                ].filter(Boolean).join(" ")}
-                onClick={() => toggleDate(key)}
-                disabled={!currentUid || saving}
-                title={`${availableMembers.length} participant(s) disponible(s)`}
-              >
-                <span>{date.getDate()}</span>
-                {availableMembers.length > 0 && (
-                  <small>{availableMembers.length}/{memberCount}</small>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {view === "month" ? (
+          renderMonthGrid(displayDate.getFullYear(), displayDate.getMonth())
+        ) : (
+          <div className="calendar-year-grid">
+            {Array.from({ length: 12 }, (_, month) => (
+              <section className="calendar-mini-month" key={month}>
+                <button
+                  type="button"
+                  className="calendar-mini-title"
+                  onClick={() => {
+                    setDisplayDate(new Date(displayDate.getFullYear(), month, 1));
+                    setView("month");
+                  }}
+                >
+                  {new Date(displayDate.getFullYear(), month, 1)
+                    .toLocaleDateString("fr-FR", { month: "long" })}
+                </button>
+                {renderMonthGrid(displayDate.getFullYear(), month, true)}
+              </section>
+            ))}
+          </div>
+        )}
 
         <div className="calendar-legend">
+          <span><i className="legend-dot team" /> Un ou plusieurs membres</span>
           <span><i className="legend-dot mine" /> Mes disponibilités</span>
           <span><i className="legend-dot common" /> Toute l'équipe</span>
         </div>
 
         <p className="calendar-help">
-          Appuie sur une date pour indiquer ou retirer ta disponibilité.
-          {saving ? " Enregistrement…" : " Enregistrement automatique."}
+          {view === "year"
+            ? "Vue annuelle : touche un jour pour sélectionner ta disponibilité, ou le nom d'un mois pour l'agrandir."
+            : "Touche les jours où tu es disponible. Les changements sont enregistrés automatiquement."}
+          {saving ? " Enregistrement…" : ""}
         </p>
       </article>
 
