@@ -94,7 +94,7 @@ export default function Trip({
       icon: "📅",
       title: "Disponibilités",
       description: "Trouver les dates qui conviennent à l'équipe.",
-                  },
+    },
   ];
 
   return (
@@ -110,13 +110,16 @@ export default function Trip({
           <p className="trip-location">{trip.location}</p>
         </div>
 
-        <span className="trip-status">{trip.status || "Préparation"}</span>
+        <span className="trip-status">
+          {trip.status || "Préparation"}
+        </span>
       </div>
 
       {errorMessage && (
         <p style={{ color: "#ff5555" }}>{errorMessage}</p>
       )}
 
+      {/* DÉTAILS DE L'AVENTURE */}
       <div className="trip-grid">
         <article className="trip-card">
           <div className="trip-info">
@@ -204,12 +207,22 @@ export default function Trip({
               </form>
             ) : (
               <>
-                <p><strong>Destination :</strong> {trip.location || "À définir"}</p>
-                <p><strong>Dates :</strong> {trip.dates || "À définir"}</p>
-                <p><strong>Statut :</strong> {trip.status || "Préparation"}</p>
+                <p>
+                  <strong>Destination :</strong>{" "}
+                  {trip.location || "À définir"}
+                </p>
+                <p>
+                  <strong>Dates :</strong> {trip.dates || "À définir"}
+                </p>
+                <p>
+                  <strong>Statut :</strong>{" "}
+                  {trip.status || "Préparation"}
+                </p>
                 <p>
                   <strong>Ton rôle :</strong>{" "}
-                  {trip.myRole === "owner" ? "Organisateur" : "Participant"}
+                  {trip.myRole === "owner"
+                    ? "Organisateur"
+                    : "Participant"}
                 </p>
               </>
             )}
@@ -217,33 +230,25 @@ export default function Trip({
         </article>
       </div>
 
+      {/* PARTICIPANTS ET CODE DE PARTAGE */}
       <article className="trip-card" style={{ marginTop: "25px" }}>
         <div className="trip-info">
-          <span className="eyebrow">INVITATION</span>
-          <h3>Inviter des participants</h3>
+          <span className="eyebrow">PARTICIPANTS</span>
+          <h3>Rejoindre l'aventure</h3>
 
           {trip.inviteCode ? (
             <>
-              <p>Voici le code à transmettre à tes compagnons :</p>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  letterSpacing: "6px",
-                  textAlign: "center",
-                  padding: "15px",
-                  color: "#D9B65D",
-                }}
-              >
-                {trip.inviteCode}
-              </div>
+              <p>
+                Partage ce code avec tes compagnons pour les inviter :
+              </p>
 
               <button
                 className="primary-button full-button"
                 onClick={copyInviteCode}
               >
-                {copyStatus === "Code copié !" ? "✓ Code copié !" : "📋 Copier le code"}
+                {copyStatus === "Code copié !"
+                  ? "✓ Code copié !"
+                  : `📋 Copier le code : ${trip.inviteCode}`}
               </button>
 
               {copyStatus && (
@@ -255,7 +260,7 @@ export default function Trip({
           ) : trip.myRole === "owner" ? (
             <>
               <p>
-                Cette ancienne aventure n'a pas encore de code enregistré.
+                Cette ancienne aventure n'a pas encore de code de partage.
               </p>
 
               <button
@@ -265,17 +270,18 @@ export default function Trip({
               >
                 {creatingInvite
                   ? "Création du code..."
-                  : "Créer un code d'invitation →"}
+                  : "Créer un code de partage →"}
               </button>
             </>
           ) : (
             <p>
-              Le code d'invitation n'est pas disponible pour cette aventure.
+              Le code de partage n'est pas disponible pour cette aventure.
             </p>
           )}
         </div>
       </article>
 
+      {/* ORGANISATION DE L'EXPÉDITION */}
       <div style={{ marginTop: "40px" }}>
         <span className="eyebrow">ORGANISATION DE L'EXPÉDITION</span>
         <h2>Préparons l'aventure</h2>
@@ -293,16 +299,21 @@ export default function Trip({
               style={{ textAlign: "left", cursor: "pointer" }}
             >
               <div className="trip-info">
-                <span className="adventure-menu-icon">{section.icon}</span>
+                <span className="adventure-menu-icon">
+                  {section.icon}
+                </span>
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
-                <span className="adventure-menu-link">OUVRIR →</span>
+                <span className="adventure-menu-link">
+                  OUVRIR →
+                </span>
               </div>
             </button>
           ))}
         </div>
       </div>
 
+      {/* ÉQUIPE */}
       <div style={{ marginTop: "40px" }}>
         <span className="eyebrow">L'ÉQUIPE</span>
         <h2>Participants ({tripMembers.length})</h2>
@@ -316,7 +327,9 @@ export default function Trip({
                 <div className="trip-info">
                   <h3>👤 {member.firstName || "Rider"}</h3>
                   <p className="trip-location">
-                    {member.role === "owner" ? "Organisateur" : "Participant"}
+                    {member.role === "owner"
+                      ? "Organisateur"
+                      : "Participant"}
                   </p>
                 </div>
               </article>
