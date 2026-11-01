@@ -40,10 +40,12 @@ export default function Login({ onGoToRegister }) {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        setError("La connexion avec Google a échoué.");
-      }
+    } catch (error) {
+  console.error("Erreur Google :", error);
+  setError(
+    "Erreur Google : " + error.code + " — " + error.message
+  );
+}
     } finally {
       setLoading(false);
     }
