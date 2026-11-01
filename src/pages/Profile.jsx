@@ -1,3 +1,4 @@
+```jsx
 import { useEffect, useState } from "react";
 import {
   doc,
@@ -10,19 +11,10 @@ import {
   reauthenticateWithCredential,
   updatePassword,
 } from "firebase/auth";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
 
-import { auth, db, storage } from "../firebase";
+import { auth, db } from "../firebase";
 
-const ridingStyles = [
-  "Trail Offroad",
-  "Route",
-  "Passagère",
-];
+const ridingStyles = ["Trail Offroad", "Route", "Passagère"];
 
 const emptyBike = {
   brand: "",
@@ -39,7 +31,6 @@ export default function Profile({ user, onBack }) {
   const [region, setRegion] = useState("");
   const [country, setCountry] = useState("");
 
-  const [photoFile, setPhotoFile] = useState(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -58,17 +49,15 @@ export default function Profile({ user, onBack }) {
 
       try {
         const profileRef = doc(db, "users", user.uid);
-        const profileSnapshot = await getDoc(profileRef);
+        const snapshot = await getDoc(profileRef);
 
-        if (profileSnapshot.exists()) {
-          const data = profileSnapshot.data();
+        if (snapshot.exists()) {
+          const data = snapshot.data();
 
           setPseudo(data.pseudo || "");
           setPhotoURL(data.photoURL || "");
           setRiding(data.riding || []);
-          setBikes(
-            data.bikes?.length ? data.bikes : [{ ...emptyBike }]
-          );
+          setBikes(data.bikes?.length ? data.bikes : [{ ...emptyBike }]);
           setCity(data.city || "");
           setRegion(data.region || "");
           setCountry(data.country || "");
@@ -76,6 +65,7 @@ export default function Profile({ user, onBack }) {
           setPseudo(user.displayName || "");
         }
       } catch (err) {
+        console.error(err);
         setError("Impossible de charger ton profil.");
       } finally {
         setLoading(false);
@@ -84,6 +74,50 @@ export default function Profile({ user, onBack }) {
 
     loadProfile();
   }, [user]);
+
+  async function compressPhoto(file) {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Le fichier choisi n'est pas une image.");
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error("La photo doit faire moins de 10 Mo.");
+    }
+
+    const imageURL = URL.createObjectURL(file);
+
+    try {
+      const image = new Image();
+
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = imageURL;
+      });
+
+      const maxSize = 500;
+      const ratio = Math.min(
+        1,
+        maxSize / Math.max(image.width, image.height)
+      );
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(image.width * ratio);
+      canvas.height = Math.round(image.height * ratio);
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Impossible de préparer la photo.");
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      return canvas.toDataURL("image/jpeg", 0.65);
+    } finally {
+      URL.revokeObjectURL(imageURL);
+    }
+  }
 
   function toggleRidingStyle(style) {
     setRiding((current) =>
@@ -126,21 +160,9 @@ export default function Profile({ user, onBack }) {
     setSaving(true);
 
     try {
-      let updatedPhotoURL = photoURL;
-
-      if (photoFile) {
-        const photoRef = ref(
-          storage,
-          `profilePhotos/${user.uid}/${Date.now()}_${photoFile.name}`
-        );
-
-        await uploadBytes(photoRef, photoFile);
-        updatedPhotoURL = await getDownloadURL(photoRef);
-      }
-
       const profileData = {
         pseudo: pseudo.trim(),
-        photoURL: updatedPhotoURL,
+        photoURL,
         riding,
         bikes: bikes.filter(
           (bike) =>
@@ -161,17 +183,31 @@ export default function Profile({ user, onBack }) {
         { merge: true }
       );
 
-      setPhotoURL(updatedPhotoURL);
-      setPhotoFile(null);
       setMessage("Profil enregistré avec succès !");
     } catch (err) {
       console.error(err);
-      setError(
-        "Enregistrement impossible. Vérifie les règles Firebase."
-      );
+      setError("Enregistrement impossible. Vérifie les règles Firestore.");
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setMessage("");
+    setError("");
+
+    try {
+      const compressedPhoto = await compressPhoto(file);
+      setPhotoURL(compressedPhoto);
+      setMessage("Photo préparée. Enregistre ton profil pour la conserver.");
+    } catch (err) {
+      setError(err.message || "Impossible de préparer cette photo.");
+    }
+
+    event.target.value = "";
   }
 
   async function handlePasswordChange(event) {
@@ -197,8 +233,12 @@ export default function Profile({ user, onBack }) {
       setNewPassword("");
       setMessage("Mot de passe modifié !");
     } catch (err) {
-      if (err.code === "auth/wrong-password" ||
-          err.code === "auth/invalid-credential") {
+      console.error(err);
+
+      if (
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/invalid-credential"
+      ) {
         setError("Ton mot de passe actuel est incorrect.");
       } else {
         setError("Impossible de modifier le mot de passe.");
@@ -258,13 +298,8 @@ export default function Profile({ user, onBack }) {
         </div>
       </div>
 
-      {message && (
-        <p style={{ color: "#D9B65D" }}>{message}</p>
-      )}
-
-      {error && (
-        <p style={{ color: "#ff6666" }}>{error}</p>
-      )}
+      {message && <p style={{ color: "#D9B65D" }}>{message}</p>}
+      {error && <p style={{ color: "#ff6666" }}>{error}</p>}
 
       <form onSubmit={handleSave}>
         <article style={cardStyle}>
@@ -272,18 +307,7 @@ export default function Profile({ user, onBack }) {
           <h3>Ton profil public</h3>
 
           <div style={{ textAlign: "center", margin: "20px 0" }}>
-            {photoFile ? (
-              <img
-                src={URL.createObjectURL(photoFile)}
-                alt="Aperçu de la photo"
-                style={{
-                  width: "110px",
-                  height: "110px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : photoURL ? (
+            {photoURL ? (
               <img
                 src={photoURL}
                 alt="Photo de profil"
@@ -317,9 +341,7 @@ export default function Profile({ user, onBack }) {
           <input
             type="file"
             accept="image/*"
-            onChange={(event) =>
-              setPhotoFile(event.target.files?.[0] || null)
-            }
+            onChange={handlePhotoChange}
             style={inputStyle}
           />
 
@@ -480,9 +502,7 @@ export default function Profile({ user, onBack }) {
         <span className="eyebrow">COMPTE</span>
         <h3>Informations de connexion</h3>
 
-        <p>
-          <strong>E-mail :</strong> {user.email}
-        </p>
+        <p><strong>E-mail :</strong> {user.email}</p>
 
         <p>
           <strong>Connexion :</strong>{" "}
@@ -495,9 +515,7 @@ export default function Profile({ user, onBack }) {
               Modifier mon mot de passe
             </h3>
 
-            <label style={labelStyle}>
-              Mot de passe actuel
-            </label>
+            <label style={labelStyle}>Mot de passe actuel</label>
             <input
               type="password"
               value={currentPassword}
@@ -508,9 +526,7 @@ export default function Profile({ user, onBack }) {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>
-              Nouveau mot de passe
-            </label>
+            <label style={labelStyle}>Nouveau mot de passe</label>
             <input
               type="password"
               value={newPassword}
@@ -522,10 +538,7 @@ export default function Profile({ user, onBack }) {
               style={inputStyle}
             />
 
-            <button
-              type="submit"
-              className="primary-button full-button"
-            >
+            <button type="submit" className="primary-button full-button">
               Modifier le mot de passe
             </button>
           </form>
@@ -539,3 +552,4 @@ export default function Profile({ user, onBack }) {
     </section>
   );
 }
+```
