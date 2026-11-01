@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
 import EquipmentPage from "./EquipmentPage";
+import CalendarPage from "./CalendarPage";
 
 export default function Trip({
   trip,
@@ -22,26 +22,26 @@ export default function Trip({
   const [copyStatus, setCopyStatus] = useState("");
 
   if (activePage === "gpx") {
-    return (
-      <GpxPage
-        trip={trip}
-        onBack={() => setActivePage("home")}
-      />
-    );
+    return <GpxPage trip={trip} onBack={() => setActivePage("home")} />;
   }
 
   if (activePage === "map") {
-    return (
-      <MeetingPoint
-        trip={trip}
-        onBack={() => setActivePage("home")}
-      />
-    );
+    return <MeetingPoint trip={trip} onBack={() => setActivePage("home")} />;
   }
 
   if (activePage === "equipment") {
     return (
       <EquipmentPage
+        trip={trip}
+        tripMembers={tripMembers}
+        onBack={() => setActivePage("home")}
+      />
+    );
+  }
+
+  if (activePage === "availability") {
+    return (
+      <CalendarPage
         trip={trip}
         tripMembers={tripMembers}
         onBack={() => setActivePage("home")}
@@ -98,21 +98,16 @@ export default function Trip({
           <p className="trip-location">{trip.location}</p>
         </div>
 
-        <span className="trip-status">
-          {trip.status || "Préparation"}
-        </span>
+        <span className="trip-status">{trip.status || "Préparation"}</span>
       </div>
 
-      {errorMessage && (
-        <p style={{ color: "#ff5555" }}>{errorMessage}</p>
-      )}
+      {errorMessage && <p style={{ color: "#ff5555" }}>{errorMessage}</p>}
 
       <div className="trip-grid">
         <article className="trip-card">
           <div className="trip-info">
             <span className="eyebrow">INFORMATIONS</span>
             <h3>Détails de l'aventure</h3>
-
             <p><strong>Destination :</strong> {trip.location}</p>
             <p><strong>Dates :</strong> {trip.dates || "À définir"}</p>
             <p><strong>Statut :</strong> {trip.status || "Préparation"}</p>
@@ -127,7 +122,6 @@ export default function Trip({
           <div className="trip-info">
             <span className="eyebrow">MODIFICATION</span>
             <h3>Modifier l'aventure</h3>
-
             <form onSubmit={onSave}>
               <label>Nom de l'aventure</label>
               <input
@@ -136,22 +130,18 @@ export default function Trip({
                 placeholder="Nom du road trip"
                 required
               />
-
               <label>Destination</label>
               <input
                 value={editLocation}
                 onChange={(e) => setEditLocation(e.target.value)}
                 placeholder="Destination"
               />
-
               <button
                 className="primary-button full-button"
                 type="submit"
                 disabled={savingDetails}
               >
-                {savingDetails
-                  ? "Enregistrement..."
-                  : "Enregistrer les modifications →"}
+                {savingDetails ? "Enregistrement..." : "Enregistrer les modifications →"}
               </button>
             </form>
           </div>
@@ -162,11 +152,9 @@ export default function Trip({
         <div className="trip-info">
           <span className="eyebrow">INVITATION</span>
           <h3>Inviter des participants</h3>
-
           {trip.inviteCode ? (
             <>
               <p>Voici le code à transmettre à tes compagnons :</p>
-
               <div
                 style={{
                   fontSize: "32px",
@@ -179,42 +167,29 @@ export default function Trip({
               >
                 {trip.inviteCode}
               </div>
-
               <button
                 className="primary-button full-button"
                 onClick={copyInviteCode}
               >
-                {copyStatus === "Code copié !"
-                  ? "✓ Code copié !"
-                  : "📋 Copier le code"}
+                {copyStatus === "Code copié !" ? "✓ Code copié !" : "📋 Copier le code"}
               </button>
-
               {copyStatus && (
-                <p style={{ color: "#D9B65D", marginTop: "10px" }}>
-                  {copyStatus}
-                </p>
+                <p style={{ color: "#D9B65D", marginTop: "10px" }}>{copyStatus}</p>
               )}
             </>
           ) : trip.myRole === "owner" ? (
             <>
-              <p>
-                Cette ancienne aventure n'a pas encore de code enregistré.
-              </p>
-
+              <p>Cette ancienne aventure n'a pas encore de code enregistré.</p>
               <button
                 className="primary-button full-button"
                 onClick={onCreateInvite}
                 disabled={creatingInvite}
               >
-                {creatingInvite
-                  ? "Création du code..."
-                  : "Créer un code d'invitation →"}
+                {creatingInvite ? "Création du code..." : "Créer un code d'invitation →"}
               </button>
             </>
           ) : (
-            <p>
-              Le code d'invitation n'est pas disponible pour cette aventure.
-            </p>
+            <p>Le code d'invitation n'est pas disponible pour cette aventure.</p>
           )}
         </div>
       </article>
@@ -232,30 +207,14 @@ export default function Trip({
               key={section.id}
               type="button"
               className="trip-card adventure-menu-card"
-              onClick={() => {
-                if (
-                  section.id === "gpx" ||
-                  section.id === "map" ||
-                  section.id === "equipment"
-                ) {
-                  setActivePage(section.id);
-                }
-              }}
+              onClick={() => setActivePage(section.id)}
               style={{ textAlign: "left", cursor: "pointer" }}
             >
               <div className="trip-info">
-                <span className="adventure-menu-icon">
-                  {section.icon}
-                </span>
+                <span className="adventure-menu-icon">{section.icon}</span>
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
-                <span className="adventure-menu-link">
-                  {section.id === "gpx" ||
-                  section.id === "map" ||
-                  section.id === "equipment"
-                    ? "OUVRIR →"
-                    : "BIENTÔT DISPONIBLE"}
-                </span>
+                <span className="adventure-menu-link">OUVRIR →</span>
               </div>
             </button>
           ))}
@@ -265,7 +224,6 @@ export default function Trip({
       <div style={{ marginTop: "40px" }}>
         <span className="eyebrow">L'ÉQUIPE</span>
         <h2>Participants ({tripMembers.length})</h2>
-
         {tripMembers.length === 0 ? (
           <p>Chargement des participants...</p>
         ) : (
@@ -275,9 +233,7 @@ export default function Trip({
                 <div className="trip-info">
                   <h3>👤 {member.firstName || "Rider"}</h3>
                   <p className="trip-location">
-                    {member.role === "owner"
-                      ? "Organisateur"
-                      : "Participant"}
+                    {member.role === "owner" ? "Organisateur" : "Participant"}
                   </p>
                 </div>
               </article>
