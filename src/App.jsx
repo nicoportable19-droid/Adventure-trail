@@ -1,4 +1,4 @@
-```jsx
+
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
