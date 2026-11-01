@@ -9,7 +9,7 @@ import {
 
 import { auth } from "../firebase";
 
-export default function Login({ onSwitch }) {
+export default function Login({ onGoToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,18 +17,17 @@ export default function Login({ onSwitch }) {
 
   useEffect(() => {
     async function checkGoogleLogin() {
-      try {const result = await getRedirectResult(auth);
+      try {
+        const result = await getRedirectResult(auth);
 
-if (result) {
-  console.log("Google connecté :", result.user.email);
-} else {
-  console.log("Aucun résultat de redirection Google.");
-}
+        if (result) {
+          console.log("Compte Google authentifié :", result.user.email);
+        }
       } catch (err) {
         console.error("Erreur retour Google :", err);
         setError(
-          "Erreur Google : " +
-            (err.code || "inconnue") +
+          "Connexion Google impossible : " +
+            (err.code || "erreur inconnue") +
             " — " +
             (err.message || "")
         );
@@ -47,12 +46,7 @@ if (result) {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
       console.error("Erreur connexion email :", err);
-      setError(
-        "Erreur : " +
-          (err.code || "inconnue") +
-          " — " +
-          (err.message || "")
-      );
+      setError(err.message || "Connexion impossible.");
     } finally {
       setLoading(false);
     }
@@ -72,8 +66,8 @@ if (result) {
     } catch (err) {
       console.error("Erreur connexion Google :", err);
       setError(
-        "Erreur Google : " +
-          (err.code || "inconnue") +
+        "Connexion Google impossible : " +
+          (err.code || "erreur inconnue") +
           " — " +
           (err.message || "")
       );
@@ -82,13 +76,20 @@ if (result) {
   }
 
   return (
-    <div className="auth-page">
+    <main className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">🏍️</div>
 
-        <h1>Adventure Trail</h1>
+        <div className="auth-brand">ADVENTURE TRAIL</div>
+
         <p className="auth-subtitle">
-          Reprends la route et retrouve tes aventures.
+          RIDE · EXPLORE · SHARE
+        </p>
+
+        <h1>Bon retour, rider.</h1>
+
+        <p className="auth-description">
+          Connecte-toi pour retrouver tes aventures.
         </p>
 
         <form onSubmit={handleEmailLogin}>
@@ -111,7 +112,7 @@ if (result) {
           />
 
           <button type="submit" disabled={loading}>
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading ? "Connexion..." : "SE CONNECTER"}
           </button>
         </form>
 
@@ -125,7 +126,7 @@ if (result) {
           onClick={handleGoogleLogin}
           disabled={loading}
         >
-          {loading ? "Redirection..." : "Continuer avec Google"}
+          {loading ? "REDIRECTION..." : "Continuer avec Google"}
         </button>
 
         {error && (
@@ -136,11 +137,14 @@ if (result) {
 
         <p className="auth-switch">
           Pas encore de compte ?
-          <button type="button" onClick={onSwitch}>
+          <button
+            type="button"
+            onClick={onGoToRegister}
+          >
             Créer un compte
           </button>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
