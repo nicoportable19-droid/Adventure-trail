@@ -1,8 +1,10 @@
+
 export default function Home({
   trips = [],
   firebaseStatus = "Connexion...",
   errorMessage = "",
   onCreate = () => {},
+  onJoin = () => {},
   onOpenTrip = () => {},
 }) {
   return (
@@ -24,9 +26,15 @@ export default function Home({
             et préparez vos aventures ensemble.
           </p>
 
-          <button className="primary-button" onClick={onCreate}>
-            <span>＋</span> Créer un road trip
-          </button>
+          <div className="home-actions">
+            <button className="primary-button" onClick={onCreate}>
+              <span>＋</span> Créer un road trip
+            </button>
+
+            <button className="outline-button" onClick={onJoin}>
+              Rejoindre avec un code →
+            </button>
+          </div>
         </div>
 
         <div className="hero-stamp">
@@ -52,7 +60,7 @@ export default function Home({
           </button>
         </div>
 
-        <p style={{ color: "#ff8a35", fontSize: "13px" }}>
+        <p style={{ color: "#D9B65D", fontSize: "13px" }}>
           {firebaseStatus}
         </p>
 
@@ -65,11 +73,19 @@ export default function Home({
             <div className="empty-icon">🏍️</div>
             <h3>Prêt à prendre la route ?</h3>
             <p>
-              Créez votre premier road trip et invitez vos compagnons.
+              Crée ton premier road trip ou rejoins une aventure
+              avec le code transmis par un organisateur.
             </p>
-            <button className="primary-button" onClick={onCreate}>
-              Créer mon premier road trip
-            </button>
+
+            <div className="home-actions home-actions-centered">
+              <button className="primary-button" onClick={onCreate}>
+                Créer mon premier road trip
+              </button>
+
+              <button className="outline-button" onClick={onJoin}>
+                Rejoindre avec un code →
+              </button>
+            </div>
           </div>
         ) : (
           <div className="trip-grid">
@@ -79,9 +95,11 @@ export default function Home({
                   <span className="trip-emoji">
                     {trip.icon || "🏍️"}
                   </span>
+
                   <span className="trip-status">
                     {trip.status || "Préparation"}
                   </span>
+
                   <span className="trip-number">
                     AT / {String(trip.id).slice(-3)}
                   </span>
@@ -91,6 +109,7 @@ export default function Home({
                   <span className="trip-location">
                     {trip.location}
                   </span>
+
                   <h3>{trip.name}</h3>
 
                   <div className="trip-meta">
@@ -100,7 +119,7 @@ export default function Home({
                     </span>
                   </div>
 
-                  <p style={{ color: "#ff8a35", fontSize: "12px" }}>
+                  <p style={{ color: "#D9B65D", fontSize: "12px" }}>
                     {trip.myRole === "owner"
                       ? "Organisateur"
                       : "Participant"}
@@ -118,6 +137,35 @@ export default function Home({
           </div>
         )}
       </section>
+
+      <style>{`
+        .home-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 12px;
+          margin-top: 24px;
+        }
+
+        .home-actions-centered {
+          justify-content: center;
+        }
+
+        .home-actions button {
+          min-height: 46px;
+        }
+
+        @media (max-width: 520px) {
+          .home-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .home-actions button {
+            width: 100%;
+          }
+        }
+      `}</style>
     </>
   );
 }
