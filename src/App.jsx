@@ -497,7 +497,9 @@ export default function App() {
       <main className="auth-page">
         <div className="auth-card">
           <div className="auth-brand">ADVENTURE TRAIL</div>
-          <p className="auth-description">Vérification de ta connexion...</p>
+          <p className="auth-description">
+            Vérification de ta connexion...
+          </p>
         </div>
       </main>
     );
@@ -513,6 +515,60 @@ export default function App() {
 
   return (
     <main className="app">
+      <style>{`
+        .topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          flex-wrap: wrap;
+          padding: 18px 4%;
+        }
+
+        .topbar .brand {
+          flex-shrink: 0;
+        }
+
+        .topbar-actions {
+          display: flex;
+          flex: 1;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .topbar-actions .user-welcome {
+          margin-right: auto;
+          padding-right: 20px;
+          color: #D9B65D;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .topbar-actions button {
+          white-space: nowrap;
+        }
+
+        @media (max-width: 700px) {
+          .topbar {
+            gap: 14px;
+          }
+
+          .topbar-actions {
+            flex-basis: 100%;
+            justify-content: flex-start;
+            gap: 8px;
+          }
+
+          .topbar-actions .user-welcome {
+            flex-basis: 100%;
+            margin: 0 0 5px;
+            padding: 0;
+          }
+        }
+      `}</style>
+
       <header className="topbar">
         <a
           className="brand"
@@ -540,13 +596,6 @@ export default function App() {
             onClick={openProfile}
           >
             Mon profil
-          </button>
-
-          <button
-            className="outline-button"
-            onClick={() => setShowJoin(true)}
-          >
-            Rejoindre avec un code
           </button>
 
           <button
@@ -584,6 +633,7 @@ export default function App() {
           firebaseStatus={firebaseStatus}
           errorMessage={errorMessage}
           onCreate={() => setShowCreate(true)}
+          onJoin={() => setShowJoin(true)}
           onOpenTrip={openTrip}
         />
       )}
