@@ -550,54 +550,42 @@ export default function App() {
           white-space: nowrap;
         }
 
-       @media (max-width: 700px) {
-  .topbar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    padding: 16px 5%;
-  }
+        /* Téléphone en portrait uniquement */
+        @media screen and (max-width: 600px) and (orientation: portrait) {
+          .topbar {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 14px 5%;
+          }
 
-  .topbar .brand {
-    align-self: flex-start;
-  }
-
-  .topbar-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    flex: none;
-    gap: 10px;
-  }
-
-  .topbar-actions .user-welcome {
-    grid-column: 1 / -1;
-    justify-self: end;
-    margin: 0 4px 2px 0;
-    padding: 0;
-    text-align: right;
-  }
-
-  .topbar-actions button {
-    width: 100%;
-    min-width: 0;
-    padding: 10px 6px;
-    font-size: 12px;
-    white-space: normal;
-  }
+          .topbar .brand {
+            align-self: flex-start;
           }
 
           .topbar-actions {
-            flex-basis: 100%;
-            justify-content: flex-start;
-            gap: 8px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            width: 100%;
+            flex: none;
+            gap: 10px;
           }
 
           .topbar-actions .user-welcome {
-            flex-basis: 100%;
-            margin: 0 0 5px;
+            grid-column: 1 / -1;
+            justify-self: end;
+            margin: 0 4px 4px 0;
             padding: 0;
+            text-align: right;
+          }
+
+          .topbar-actions button {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 6px;
+            font-size: 12px;
+            white-space: normal;
           }
         }
       `}</style>
