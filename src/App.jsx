@@ -539,8 +539,8 @@ export default function App() {
         }
 
         .topbar-actions .user-welcome {
-          margin-right: auto;
-          padding-right: 20px;
+          margin-right: 12px;
+          padding-right: 8px;
           color: #D9B65D;
           font-weight: 700;
           white-space: nowrap;
