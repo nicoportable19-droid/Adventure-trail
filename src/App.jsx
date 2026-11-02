@@ -550,9 +550,42 @@ export default function App() {
           white-space: nowrap;
         }
 
-        @media (max-width: 700px) {
-          .topbar {
-            gap: 14px;
+       @media (max-width: 700px) {
+  .topbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px 5%;
+  }
+
+  .topbar .brand {
+    align-self: flex-start;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    flex: none;
+    gap: 10px;
+  }
+
+  .topbar-actions .user-welcome {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin: 0 4px 2px 0;
+    padding: 0;
+    text-align: right;
+  }
+
+  .topbar-actions button {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 6px;
+    font-size: 12px;
+    white-space: normal;
+  }
           }
 
           .topbar-actions {
