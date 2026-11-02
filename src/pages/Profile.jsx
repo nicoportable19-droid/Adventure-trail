@@ -11,8 +11,6 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  GoogleAuthProvider,
-  reauthenticateWithPopup,
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 
@@ -158,7 +156,7 @@ export default function Profile({ user = auth.currentUser, onBack }) {
 
       setPhotoURL(compressed);
       setMessage("Photo prête. Enregistre ton profil pour la conserver.");
-    } catch (err) {
+    } catch {
       setError("Impossible de lire cette photo.");
     }
   }
@@ -178,7 +176,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         photoURL,
         riding,
         bikes: bikes.filter(
-          (bike) => bike.make.trim() || bike.model.trim() || bike.capacity.trim()
+          (bike) =>
+            bike.make.trim() ||
+            bike.model.trim() ||
+            bike.capacity.trim()
         ),
         city: city.trim(),
         region: region.trim(),
@@ -196,12 +197,20 @@ export default function Profile({ user = auth.currentUser, onBack }) {
 
       if (newPassword) {
         if (newPassword.length < 6) {
-          throw new Error("Le nouveau mot de passe doit contenir au moins 6 caractères.");
+          throw new Error(
+            "Le nouveau mot de passe doit contenir au moins 6 caractères."
+          );
         }
 
-        if (user.providerData.some((provider) => provider.providerId === "password")) {
+        if (
+          user.providerData.some(
+            (provider) => provider.providerId === "password"
+          )
+        ) {
           if (!currentPassword) {
-            throw new Error("Entre ton mot de passe actuel pour le modifier.");
+            throw new Error(
+              "Entre ton mot de passe actuel pour le modifier."
+            );
           }
 
           const credential = EmailAuthProvider.credential(
@@ -209,7 +218,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
             currentPassword
           );
 
-          await reauthenticateWithCredential(auth.currentUser, credential);
+          await reauthenticateWithCredential(
+            auth.currentUser,
+            credential
+          );
         }
 
         await updatePassword(auth.currentUser, newPassword);
@@ -227,54 +239,278 @@ export default function Profile({ user = auth.currentUser, onBack }) {
   }
 
   if (loading) {
-    return <main className="trips-section"><p>Chargement du profil...</p></main>;
+    return (
+      <main className="trips-section">
+        <p>Chargement du profil...</p>
+      </main>
+    );
   }
 
   return (
-    <main className="trips-section">
+    <main className="trips-section profile-page">
+      <style>{`
+        .profile-page {
+          --profile-sand: #D9B65D;
+          --profile-light: #E8CC82;
+          --profile-card: #191a17;
+          --profile-border: rgba(217,182,93,.2);
+        }
+
+        .profile-page .profile-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          flex-wrap: wrap;
+          margin: 28px 0;
+        }
+
+        .profile-page .profile-heading h2 {
+          margin: 8px 0;
+        }
+
+        .profile-page .profile-subtitle {
+          color: #aaa;
+          margin: 0;
+        }
+
+        .profile-page .profile-card {
+          background: var(--profile-card);
+          border: 1px solid var(--profile-border);
+          border-radius: 14px;
+          padding: 24px;
+          min-width: 0;
+        }
+
+        .profile-page .profile-card h3 {
+          margin: 8px 0 20px;
+        }
+
+        .profile-page .profile-card .eyebrow {
+          color: var(--profile-sand);
+          letter-spacing: 1.5px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .profile-page .profile-identity {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+          flex-wrap: wrap;
+          margin-bottom: 24px;
+        }
+
+        .profile-page .profile-avatar {
+          width: 112px;
+          height: 112px;
+          flex: 0 0 112px;
+          border-radius: 50%;
+          border: 2px solid var(--profile-sand);
+          background: #292920;
+          object-fit: cover;
+        }
+
+        .profile-page .profile-avatar-placeholder {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--profile-sand);
+          font-size: 42px;
+        }
+
+        .profile-page .profile-field {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin: 16px 0;
+        }
+
+        .profile-page .profile-field label {
+          color: var(--profile-light);
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .profile-page .profile-field input {
+          width: 100%;
+          box-sizing: border-box;
+          min-width: 0;
+        }
+
+        .profile-page .profile-choice {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 13px 15px;
+          margin: 9px 0;
+          border: 1px solid #38382f;
+          border-radius: 9px;
+          background: #20211d;
+          cursor: pointer;
+        }
+
+        .profile-page .profile-choice:has(input:checked) {
+          border-color: var(--profile-sand);
+          background: rgba(217,182,93,.09);
+          color: var(--profile-light);
+        }
+
+        .profile-page .profile-choice input {
+          accent-color: var(--profile-sand);
+          width: 17px;
+          height: 17px;
+        }
+
+        .profile-page .profile-bike {
+          padding: 18px;
+          margin: 16px 0;
+          border: 1px solid #38382f;
+          border-radius: 10px;
+          background: #20211d;
+        }
+
+        .profile-page .profile-bike-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 10px;
+          color: var(--profile-light);
+          font-weight: 700;
+        }
+
+        .profile-page .profile-muted {
+          color: #999;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .profile-page .profile-message {
+          padding: 13px 16px;
+          margin: 16px 0;
+          border-radius: 9px;
+          background: rgba(217,182,93,.1);
+          border: 1px solid var(--profile-border);
+          color: var(--profile-light);
+        }
+
+        .profile-page .profile-error {
+          padding: 13px 16px;
+          margin: 16px 0;
+          border-radius: 9px;
+          background: rgba(255,80,80,.08);
+          border: 1px solid rgba(255,100,100,.3);
+          color: #ff9999;
+          overflow-wrap: anywhere;
+        }
+
+        .profile-page .profile-section {
+          margin-top: 20px;
+        }
+
+        .profile-page .profile-save {
+          margin: 26px 0 10px;
+        }
+
+        .profile-page .profile-file {
+          color: #aaa;
+          font-size: 13px;
+          max-width: 100%;
+        }
+
+        .profile-page .profile-file::file-selector-button {
+          padding: 9px 13px;
+          margin-right: 10px;
+          border: 1px solid var(--profile-border);
+          border-radius: 7px;
+          background: #292920;
+          color: var(--profile-light);
+          cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+          .profile-page .profile-card {
+            padding: 18px;
+          }
+
+          .profile-page .profile-identity {
+            gap: 15px;
+          }
+
+          .profile-page .profile-avatar {
+            width: 90px;
+            height: 90px;
+            flex-basis: 90px;
+          }
+        }
+      `}</style>
+
       <button type="button" className="text-button" onClick={onBack}>
         ← Retour
       </button>
 
-      <div className="section-heading" style={{ marginTop: 25 }}>
+      <div className="profile-heading">
         <div>
           <span className="eyebrow">ESPACE PERSONNEL</span>
           <h2>Mon profil</h2>
-          <p className="trip-location">
-            Tes informations et ton identité de rider.
+          <p className="profile-subtitle">
+            Prépare ton identité de rider et personnalise ton espace.
           </p>
         </div>
+        <span className="trip-status">RIDER</span>
       </div>
 
-      {error && <p role="alert" style={{ color: "#ff7777" }}>{error}</p>}
-      {message && <p style={{ color: "#D9B65D" }}>{message}</p>}
+      {error && (
+        <div className="profile-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {message && (
+        <div className="profile-message" role="status">
+          {message}
+        </div>
+      )}
 
       <form onSubmit={saveProfile}>
         <div className="trip-grid">
-          <section className="trip-card">
-            <div className="trip-info">
-              <span className="eyebrow">IDENTITÉ</span>
-              <h3>Ma photo et mon pseudo</h3>
+          <section className="profile-card">
+            <span className="eyebrow">01 — IDENTITÉ</span>
+            <h3>Ma photo et mon pseudo</h3>
 
-              {photoURL && (
+            <div className="profile-identity">
+              {photoURL ? (
                 <img
+                  className="profile-avatar"
                   src={photoURL}
                   alt="Photo de profil"
-                  style={{
-                    width: 110,
-                    height: 110,
-                    objectFit: "cover",
-                    borderRadius: "50%",
-                    marginBottom: 15,
-                  }}
                 />
+              ) : (
+                <div className="profile-avatar profile-avatar-placeholder">
+                  👤
+                </div>
               )}
 
-              <label>Photo de profil</label>
-              <input type="file" accept="image/*" onChange={handlePhoto} />
+              <div className="profile-field" style={{ flex: 1 }}>
+                <label htmlFor="profile-photo">Photo de profil</label>
+                <input
+                  id="profile-photo"
+                  className="profile-file"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhoto}
+                />
+                <span className="profile-muted">
+                  Image de 10 Mo maximum.
+                </span>
+              </div>
+            </div>
 
-              <label>Pseudo public</label>
+            <div className="profile-field">
+              <label htmlFor="profile-pseudo">Pseudo public</label>
               <input
+                id="profile-pseudo"
                 value={pseudo}
                 onChange={(e) => setPseudo(e.target.value)}
                 placeholder="Ton pseudo de rider"
@@ -283,119 +519,163 @@ export default function Profile({ user = auth.currentUser, onBack }) {
             </div>
           </section>
 
-          <section className="trip-card">
-            <div className="trip-info">
-              <span className="eyebrow">PRATIQUE</span>
-              <h3>Mon style de conduite</h3>
+          <section className="profile-card">
+            <span className="eyebrow">02 — PRATIQUE</span>
+            <h3>Mon style de conduite</h3>
+            <p className="profile-muted">
+              Sélectionne une ou plusieurs pratiques.
+            </p>
 
-              {ridingOptions.map((option) => (
-                <label
-                  key={option}
-                  style={{ display: "flex", gap: 10, margin: "12px 0" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={riding.includes(option)}
-                    onChange={() => toggleRiding(option)}
-                  />
-                  {option}
-                </label>
-              ))}
-            </div>
+            {ridingOptions.map((option) => (
+              <label className="profile-choice" key={option}>
+                <input
+                  type="checkbox"
+                  checked={riding.includes(option)}
+                  onChange={() => toggleRiding(option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
           </section>
         </div>
 
-        <section className="trip-card" style={{ marginTop: 20 }}>
-          <div className="trip-info">
-            <span className="eyebrow">GARAGE</span>
-            <h3>Mes motos</h3>
+        <section className="profile-card profile-section">
+          <span className="eyebrow">03 — GARAGE</span>
+          <h3>Mes motos</h3>
+          <p className="profile-muted">
+            Ajoute les motos que tu utilises pour tes aventures.
+          </p>
 
-            {bikes.map((bike, index) => (
-              <div
-                key={index}
-                style={{
-                  borderBottom: "1px solid #444",
-                  paddingBottom: 18,
-                  marginBottom: 18,
-                }}
-              >
-                <label>Marque</label>
-                <input
-                  value={bike.make}
-                  onChange={(e) => updateBike(index, "make", e.target.value)}
-                  placeholder="Ex. : Yamaha"
-                />
+          {bikes.length === 0 && (
+            <p className="profile-muted">
+              Aucune moto renseignée pour le moment.
+            </p>
+          )}
 
-                <label>Modèle</label>
-                <input
-                  value={bike.model}
-                  onChange={(e) => updateBike(index, "model", e.target.value)}
-                  placeholder="Ex. : Ténéré 700"
-                />
-
-                <label>Cylindrée (cm³)</label>
-                <input
-                  value={bike.capacity}
-                  onChange={(e) => updateBike(index, "capacity", e.target.value)}
-                  placeholder="Ex. : 700"
-                />
-
+          {bikes.map((bike, index) => (
+            <div className="profile-bike" key={index}>
+              <div className="profile-bike-title">
+                <span>MOTO {String(index + 1).padStart(2, "0")}</span>
                 <button
                   type="button"
                   className="outline-button"
                   onClick={() => removeBike(index)}
                 >
-                  Supprimer cette moto
+                  Supprimer
                 </button>
               </div>
-            ))}
 
-            <button type="button" className="outline-button" onClick={addBike}>
-              + Ajouter une moto
-            </button>
-          </div>
+              <div className="trip-grid">
+                <div className="profile-field">
+                  <label>Marque</label>
+                  <input
+                    value={bike.make}
+                    onChange={(e) =>
+                      updateBike(index, "make", e.target.value)
+                    }
+                    placeholder="Ex. : Yamaha"
+                  />
+                </div>
+
+                <div className="profile-field">
+                  <label>Modèle</label>
+                  <input
+                    value={bike.model}
+                    onChange={(e) =>
+                      updateBike(index, "model", e.target.value)
+                    }
+                    placeholder="Ex. : Ténéré 700"
+                  />
+                </div>
+              </div>
+
+              <div className="profile-field">
+                <label>Cylindrée (cm³)</label>
+                <input
+                  value={bike.capacity}
+                  onChange={(e) =>
+                    updateBike(index, "capacity", e.target.value)
+                  }
+                  placeholder="Ex. : 700"
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={addBike}
+          >
+            + Ajouter une moto
+          </button>
         </section>
 
-        <section className="trip-card" style={{ marginTop: 20 }}>
-          <div className="trip-info">
-            <span className="eyebrow">ORIGINES</span>
-            <h3>Ma région</h3>
+        <section className="profile-card profile-section">
+          <span className="eyebrow">04 — ORIGINES</span>
+          <h3>Ma région</h3>
+          <p className="profile-muted">
+            Indique d'où tu pars pour tes prochaines aventures.
+          </p>
 
-            <label>Ville</label>
-            <input value={city} onChange={(e) => setCity(e.target.value)} />
+          <div className="trip-grid">
+            <div className="profile-field">
+              <label>Ville</label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Ta ville"
+              />
+            </div>
 
-            <label>Région ou département</label>
-            <input value={region} onChange={(e) => setRegion(e.target.value)} />
+            <div className="profile-field">
+              <label>Région ou département</label>
+              <input
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                placeholder="Ta région"
+              />
+            </div>
+          </div>
 
+          <div className="profile-field">
             <label>Pays</label>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} />
+            <input
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Ton pays"
+            />
           </div>
         </section>
 
-        <section className="trip-card" style={{ marginTop: 20 }}>
-          <div className="trip-info">
-            <span className="eyebrow">COMPTE</span>
-            <h3>Mes informations de connexion</h3>
+        <section className="profile-card profile-section">
+          <span className="eyebrow">05 — COMPTE</span>
+          <h3>Mes informations de connexion</h3>
 
+          <div className="profile-field">
             <label>Adresse e-mail</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
 
-            {user.providerData.some((provider) => provider.providerId === "password") && (
-              <>
-                <label>Mot de passe actuel</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </>
-            )}
+          {user.providerData.some(
+            (provider) => provider.providerId === "password"
+          ) && (
+            <div className="profile-field">
+              <label>Mot de passe actuel</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+          )}
 
+          <div className="profile-field">
             <label>Nouveau mot de passe</label>
             <input
               type="password"
@@ -404,18 +684,17 @@ export default function Profile({ user = auth.currentUser, onBack }) {
               placeholder="Laisser vide pour ne pas changer"
               autoComplete="new-password"
             />
-
-            <p className="trip-location">
-              La modification de l'e-mail ou du mot de passe peut nécessiter
-              une nouvelle authentification.
-            </p>
           </div>
+
+          <p className="profile-muted">
+            La modification de l'e-mail ou du mot de passe peut nécessiter
+            une nouvelle authentification.
+          </p>
         </section>
 
         <button
           type="submit"
-          className="primary-button full-button"
-          style={{ marginTop: 25 }}
+          className="primary-button full-button profile-save"
           disabled={saving}
         >
           {saving ? "Enregistrement..." : "Enregistrer mon profil →"}
