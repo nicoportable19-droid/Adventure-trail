@@ -20,6 +20,7 @@ import Home from "./pages/Home";
 import Trip from "./pages/Trip";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 import "./style.css";
 import "./auth.css";
 
@@ -50,6 +51,7 @@ export default function App() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   const [tripName, setTripName] = useState("");
   const [tripLocation, setTripLocation] = useState("");
@@ -63,9 +65,12 @@ export default function App() {
   const [editLocation, setEditLocation] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
 
+  const [profilePseudo, setProfilePseudo] = useState("");
+
   const userId = user?.uid || null;
 
   const firstName =
+    profilePseudo?.trim() ||
     user?.displayName?.trim() ||
     user?.email?.split("@")[0] ||
     "Rider";
@@ -93,11 +98,37 @@ export default function App() {
         setJoinedTrips([]);
         setSelectedTrip(null);
         setTripMembers([]);
+        setShowProfile(false);
+        setProfilePseudo("");
       }
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Charger le pseudo public du profil
+  useEffect(() => {
+    if (!userId) {
+      setProfilePseudo("");
+      return;
+    }
+
+    const profileRef = doc(db, "users", userId);
+
+    const unsubscribe = onSnapshot(
+      profileRef,
+      (snapshot) => {
+        setProfilePseudo(
+          snapshot.exists() ? snapshot.data().pseudo || "" : ""
+        );
+      },
+      (error) => {
+        console.error("Lecture du profil :", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // Charger les aventures du compte connecté
   useEffect(() => {
@@ -237,6 +268,7 @@ export default function App() {
     setEditLocation(trip.location || "");
     setErrorMessage("");
     setTripMembers([]);
+    setShowProfile(false);
   }
 
   function closeTrip() {
@@ -245,11 +277,23 @@ export default function App() {
     setErrorMessage("");
   }
 
+  function openProfile() {
+    setSelectedTrip(null);
+    setTripMembers([]);
+    setShowProfile(true);
+    setErrorMessage("");
+  }
+
+  function closeProfile() {
+    setShowProfile(false);
+  }
+
   // Déconnexion
   async function handleSignOut() {
     try {
       await signOut(auth);
       closeTrip();
+      setShowProfile(false);
       setCreatedInviteCode("");
       setShowCreate(false);
       setShowJoin(false);
@@ -476,6 +520,7 @@ export default function App() {
           onClick={(e) => {
             e.preventDefault();
             closeTrip();
+            closeProfile();
           }}
         >
           <span className="brand-icon">A</span>
@@ -489,6 +534,13 @@ export default function App() {
           <span className="user-welcome">
             {firstName}
           </span>
+
+          <button
+            className="outline-button"
+            onClick={openProfile}
+          >
+            Mon profil
+          </button>
 
           <button
             className="outline-button"
@@ -506,7 +558,12 @@ export default function App() {
         </div>
       </header>
 
-      {selectedTrip ? (
+      {showProfile ? (
+        <Profile
+          user={user}
+          onBack={closeProfile}
+        />
+      ) : selectedTrip ? (
         <Trip
           trip={selectedTrip}
           tripMembers={tripMembers}
