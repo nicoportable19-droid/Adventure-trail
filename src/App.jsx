@@ -490,10 +490,7 @@ export default function App() {
           status: "Préparation",
           icon: "🏍️",
           inviteCode: code,
-
-          // Modèle de matériel choisi à la création
           equipmentPreset,
-
           createdAt: serverTimestamp(),
         }
       );
@@ -744,6 +741,170 @@ export default function App() {
           white-space: nowrap;
         }
 
+        /* Modale de création - thème Adventure Trail */
+        .create-trip-modal {
+          width: min(540px, calc(100vw - 32px));
+          max-height: min(88vh, 820px);
+          overflow-y: auto;
+          padding: 34px;
+          border: 1px solid rgba(217,182,93,.28);
+          border-radius: 20px;
+          color: #f2eee4;
+          background:
+            radial-gradient(circle at 100% 0%, rgba(217,182,93,.13), transparent 38%),
+            linear-gradient(145deg, #22231e, #151612 78%);
+          box-shadow: 0 28px 90px rgba(0,0,0,.68);
+        }
+
+        .create-trip-modal .eyebrow {
+          color: #d9b65d;
+          letter-spacing: 2px;
+        }
+
+        .create-trip-modal h2 {
+          margin: 12px 0 8px;
+          color: #f5f0e5;
+        }
+
+        .create-trip-modal > p {
+          color: #aaa99f;
+          line-height: 1.6;
+        }
+
+        .create-trip-modal label {
+          display: block;
+          margin: 20px 0 8px;
+          color: #e5c878;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: .7px;
+          text-transform: uppercase;
+        }
+
+        .create-trip-modal input {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: 48px;
+          padding: 0 14px;
+          border: 1px solid #49493e;
+          border-radius: 10px;
+          outline: none;
+          background: #25261f;
+          color: #f4efe3;
+          font: inherit;
+          transition: border-color .2s, box-shadow .2s;
+        }
+
+        .create-trip-modal input::placeholder {
+          color: #77776d;
+        }
+
+        .create-trip-modal input:focus {
+          border-color: #d9b65d;
+          box-shadow: 0 0 0 3px rgba(217,182,93,.12);
+        }
+
+        .equipment-choice-list {
+          display: grid;
+          gap: 9px;
+          margin-top: 10px;
+        }
+
+        .equipment-choice {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 13px 14px;
+          border: 1px solid #414238;
+          border-radius: 12px;
+          color: #e9e5da;
+          background: rgba(255,255,255,.025);
+          text-align: left;
+          cursor: pointer;
+          transition: border-color .18s, background .18s, transform .18s;
+        }
+
+        .equipment-choice:hover {
+          border-color: rgba(217,182,93,.55);
+          background: rgba(217,182,93,.06);
+          transform: translateY(-1px);
+        }
+
+        .equipment-choice.is-selected {
+          border-color: #d9b65d;
+          background: rgba(217,182,93,.12);
+          box-shadow: inset 0 0 0 1px rgba(217,182,93,.16);
+        }
+
+        .equipment-choice-icon {
+          display: grid;
+          place-items: center;
+          flex: 0 0 38px;
+          height: 38px;
+          border: 1px solid rgba(217,182,93,.25);
+          border-radius: 10px;
+          color: #e4c36d;
+          background: rgba(217,182,93,.08);
+          font-size: 17px;
+        }
+
+        .equipment-choice-copy {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .equipment-choice-name {
+          overflow-wrap: anywhere;
+          font-weight: 750;
+        }
+
+        .equipment-choice-meta {
+          color: #99998e;
+          font-size: 12px;
+        }
+
+        .equipment-choice-check {
+          display: grid;
+          place-items: center;
+          flex: 0 0 22px;
+          height: 22px;
+          border: 1px solid #626154;
+          border-radius: 50%;
+          color: transparent;
+          font-size: 12px;
+        }
+
+        .equipment-choice.is-selected .equipment-choice-check {
+          border-color: #d9b65d;
+          color: #191a15;
+          background: #d9b65d;
+        }
+
+        .equipment-choice-hint {
+          margin: 10px 0 20px !important;
+          color: #99998e !important;
+          font-size: 12px;
+        }
+
+        .create-trip-modal .primary-button {
+          min-height: 50px;
+          border-radius: 10px;
+        }
+
+        .create-trip-modal .modal-close {
+          color: #d8d2c3;
+        }
+
+        @media (max-width: 600px) {
+          .create-trip-modal {
+            padding: 27px 20px;
+          }
+        }
+
         @media screen and (max-width: 650px) {
           .topbar {
             height: auto;
@@ -886,7 +1047,7 @@ export default function App() {
           onClick={() => setShowCreate(false)}
         >
           <form
-            className="modal"
+            className="modal create-trip-modal"
             onSubmit={createTrip}
             onClick={(event) => event.stopPropagation()}
           >
@@ -929,36 +1090,89 @@ export default function App() {
               placeholder="Ex. : France · Pyrénées"
             />
 
-            {/* Sélection de la liste favorite */}
-            <label htmlFor="trip-equipment-list">
+            <label>
               Liste de matériel à utiliser
             </label>
 
-            <select
-              id="trip-equipment-list"
-              value={selectedEquipmentListId}
-              onChange={(event) =>
-                setSelectedEquipmentListId(event.target.value)
-              }
+            <div
+              className="equipment-choice-list"
+              role="radiogroup"
+              aria-label="Liste de matériel"
             >
-              <option value="">
-                Aucune liste favorite
-              </option>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!selectedEquipmentListId}
+                className={`equipment-choice ${
+                  !selectedEquipmentListId ? "is-selected" : ""
+                }`}
+                onClick={() => setSelectedEquipmentListId("")}
+              >
+                <span className="equipment-choice-icon">—</span>
 
-              {equipmentLists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name} (
-                  {(list.items || []).filter(
-                    (item) => item.selected
-                  ).length} équipements
-                  )
-                </option>
-              ))}
-            </select>
+                <span className="equipment-choice-copy">
+                  <span className="equipment-choice-name">
+                    Aucune liste favorite
+                  </span>
 
-            <p className="profile-muted">
-              Seuls les équipements cochés dans cette liste seront
-              copiés dans ton aventure.
+                  <span className="equipment-choice-meta">
+                    Partir sans modèle de matériel
+                  </span>
+                </span>
+
+                <span className="equipment-choice-check">
+                  ✓
+                </span>
+              </button>
+
+              {equipmentLists.map((list) => {
+                const selectedCount = (list.items || []).filter(
+                  (item) => item.selected
+                ).length;
+
+                const isSelected =
+                  selectedEquipmentListId === list.id;
+
+                return (
+                  <button
+                    key={list.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`equipment-choice ${
+                      isSelected ? "is-selected" : ""
+                    }`}
+                    onClick={() =>
+                      setSelectedEquipmentListId(list.id)
+                    }
+                  >
+                    <span className="equipment-choice-icon">
+                      🎒
+                    </span>
+
+                    <span className="equipment-choice-copy">
+                      <span className="equipment-choice-name">
+                        {list.name}
+                      </span>
+
+                      <span className="equipment-choice-meta">
+                        {selectedCount} équipement
+                        {selectedCount > 1 ? "s" : ""} sélectionné
+                        {selectedCount > 1 ? "s" : ""}
+                      </span>
+                    </span>
+
+                    <span className="equipment-choice-check">
+                      ✓
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="equipment-choice-hint">
+              Seuls les équipements cochés dans la liste choisie
+              seront copiés dans ton aventure.
             </p>
 
             <button
