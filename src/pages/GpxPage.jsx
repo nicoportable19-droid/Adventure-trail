@@ -3,21 +3,20 @@ import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import MeetingPointMap from "../components/MeetingPointMap";
 
-const MAX_GPX_SIZE = 700 * 1024;
+const MAX_TOTAL_GPX_SIZE = 700 * 1024;
+
+function createId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function parseGPX(content) {
-  const xml = new DOMParser().parseFromString(
-    content,
-    "application/xml"
-  );
+  const xml = new DOMParser().parseFromString(content, "application/xml");
 
   if (xml.querySelector("parsererror")) {
-    throw new Error("Le fichier GPX est invalide.");
+    throw new Error("Un des fichiers GPX est invalide.");
   }
 
-  const points = Array.from(
-    xml.querySelectorAll("trkpt, rtept")
-  )
+  const points = Array.from(xml.querySelectorAll("trkpt, rtept"))
     .map((point) => ({
       lat: Number(point.getAttribute("lat")),
       lng: Number(point.getAttribute("lon")),
@@ -31,86 +30,133 @@ function parseGPX(content) {
     );
 
   if (points.length < 2) {
-    throw new Error("Aucun parcours GPS exploitable trouvé.");
+    throw new Error("Un parcours ne contient pas assez de points GPS.");
   }
 
   return points;
 }
 
+function loadSavedRoutes(trip) {
+  if (Array.isArray(trip.gpxRoutes) && trip.gpxRoutes.length) {
+    return trip.gpxRoutes;
+  }
+
+  // Compatibilité avec l'ancien format : un seul GPX
+  if (trip.gpxContent && Array.isArray(trip.gpxTrack)) {
+    return [{
+      id: "legacy-gpx",
+      name: trip.gpxFileName || "Parcours GPX",
+      content: trip.gpxContent,
+      track: trip.gpxTrack,
+    }];
+  }
+
+  return [];
+}
+
 export default function GpxPage({ trip, onBack }) {
-  const [gpxTrack, setGpxTrack] = useState(trip.gpxTrack || []);
-  const [gpxContent, setGpxContent] = useState(trip.gpxContent || "");
-  const [gpxFileName, setGpxFileName] = useState(trip.gpxFileName || "");
+  const [routes, setRoutes] = useState(() => loadSavedRoutes(trip));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setGpxTrack(trip.gpxTrack || []);
-    setGpxContent(trip.gpxContent || "");
-    setGpxFileName(trip.gpxFileName || "");
-  }, [trip.id, trip.gpxTrack, trip.gpxContent, trip.gpxFileName]);
+    setRoutes(loadSavedRoutes(trip));
+  }, [trip.id, trip.gpxRoutes, trip.gpxContent]);
 
   async function importGPX(event) {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
 
-    if (!file) return;
+    if (!files.length) return;
 
     setMessage("");
 
-    if (!file.name.toLowerCase().endsWith(".gpx")) {
-      setMessage("Choisis un fichier avec l'extension .gpx.");
-      event.target.value = "";
+    const invalidFile = files.find(
+      (file) => !file.name.toLowerCase().endsWith(".gpx")
+    );
+
+    if (invalidFile) {
+      setMessage(`« ${invalidFile.name} » n'est pas un fichier GPX.`);
       return;
     }
 
-    if (file.size > MAX_GPX_SIZE) {
-      setMessage("Fichier trop volumineux : maximum 700 Ko.");
-      event.target.value = "";
+    const currentSize = routes.reduce(
+      (total, route) => total + (route.content?.length || 0),
+      0
+    );
+
+    const addedSize = files.reduce(
+      (total, file) => total + file.size,
+      0
+    );
+
+    if (currentSize + addedSize > MAX_TOTAL_GPX_SIZE) {
+      setMessage(
+        "La taille totale des parcours ne doit pas dépasser 700 Ko."
+      );
       return;
     }
 
     try {
-      const content = await file.text();
-      const points = parseGPX(content);
+      const importedRoutes = await Promise.all(
+        files.map(async (file) => {
+          const content = await file.text();
 
-      setGpxContent(content);
-      setGpxTrack(points);
-      setGpxFileName(file.name);
-      setMessage("Parcours importé ! Vérifie le tracé sur la carte.");
+          return {
+            id: createId(),
+            name: file.name,
+            content,
+            track: parseGPX(content),
+          };
+        })
+      );
+
+      setRoutes((current) => [...current, ...importedRoutes]);
+
+      setMessage(
+        `${importedRoutes.length} parcours importé(s). Pense à enregistrer.`
+      );
     } catch (error) {
       setMessage(error.message);
     }
+  }
 
-    event.target.value = "";
+  function removeRoute(routeId) {
+    setRoutes((current) =>
+      current.filter((route) => route.id !== routeId)
+    );
+    setMessage("Parcours retiré. Pense à enregistrer les modifications.");
   }
 
   async function saveGPX() {
-    if (!gpxContent || saving) return;
+    if (saving) return;
 
     setSaving(true);
     setMessage("");
 
     try {
+      const firstRoute = routes[0];
+
       await updateDoc(doc(db, "trips", trip.id), {
-        gpxContent,
-        gpxTrack,
-        gpxFileName,
+        gpxRoutes: routes,
+        // On conserve aussi les anciens champs pour compatibilité.
+        gpxContent: firstRoute?.content || "",
+        gpxTrack: firstRoute?.track || [],
+        gpxFileName: firstRoute?.name || "",
         updatedAt: serverTimestamp(),
       });
 
-      setMessage("Parcours GPX enregistré et partagé !");
+      setMessage("Tous les parcours ont été enregistrés et partagés !");
     } catch (error) {
       console.error(error);
-      setMessage("Erreur : " + error.message);
+      setMessage("Erreur lors de l'enregistrement : " + error.message);
     } finally {
       setSaving(false);
     }
   }
 
-  function downloadGPX() {
-    if (!gpxContent) return;
-
-    const blob = new Blob([gpxContent], {
+  function downloadRoute(route) {
+    const blob = new Blob([route.content], {
       type: "application/gpx+xml",
     });
 
@@ -118,7 +164,7 @@ export default function GpxPage({ trip, onBack }) {
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = gpxFileName || "adventure-trail.gpx";
+    link.download = route.name || "adventure-trail.gpx";
 
     document.body.appendChild(link);
     link.click();
@@ -127,8 +173,102 @@ export default function GpxPage({ trip, onBack }) {
     URL.revokeObjectURL(url);
   }
 
+  const allTracks = routes.map((route) => route.track);
+  const totalPoints = routes.reduce(
+    (total, route) => total + (route.track?.length || 0),
+    0
+  );
+
   return (
-    <section className="trips-section">
+    <section className="trips-section gpx-page">
+      <style>{`
+        .gpx-page .gpx-panel {
+          padding: 25px;
+          margin-top: 20px;
+          border: 1px solid rgba(217,182,93,.2);
+          border-radius: 15px;
+          background: #191a17;
+        }
+
+        .gpx-page .gpx-upload {
+          display: block;
+          margin-top: 18px;
+          padding: 22px;
+          border: 1px dashed rgba(217,182,93,.5);
+          border-radius: 12px;
+          background: rgba(217,182,93,.045);
+        }
+
+        .gpx-page .gpx-upload input {
+          display: block;
+          max-width: 100%;
+          margin-top: 14px;
+          color: #ddd5c2;
+        }
+
+        .gpx-page .gpx-route {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 15px;
+          flex-wrap: wrap;
+          padding: 15px;
+          margin-top: 12px;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 10px;
+          background: #22231e;
+        }
+
+        .gpx-page .gpx-route-name {
+          min-width: 0;
+          overflow-wrap: anywhere;
+          color: #eee9dc;
+          font-weight: 600;
+        }
+
+        .gpx-page .gpx-route-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .gpx-page .gpx-route-actions button {
+          padding: 8px 12px;
+          border: 1px solid rgba(217,182,93,.3);
+          border-radius: 7px;
+          background: transparent;
+          color: #e8cc82;
+          cursor: pointer;
+        }
+
+        .gpx-page .gpx-summary {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin: 18px 0;
+        }
+
+        .gpx-page .gpx-stat {
+          padding: 9px 13px;
+          border: 1px solid rgba(217,182,93,.2);
+          border-radius: 8px;
+          color: #e8cc82;
+          background: rgba(217,182,93,.06);
+          font-size: 13px;
+        }
+
+        .gpx-page .gpx-message {
+          margin-top: 16px;
+          color: #e8cc82;
+        }
+
+        @media(max-width: 600px) {
+          .gpx-page .gpx-panel { padding: 17px; }
+          .gpx-page .gpx-route { align-items: flex-start; }
+          .gpx-page .gpx-route-actions { width: 100%; }
+        }
+      `}</style>
+
       <button className="text-button" onClick={onBack}>
         ← Retour à l'aventure
       </button>
@@ -136,74 +276,102 @@ export default function GpxPage({ trip, onBack }) {
       <div className="section-heading" style={{ marginTop: "25px" }}>
         <div>
           <span className="eyebrow">ADVENTURE TRAIL · GPS</span>
-          <h2>Itinéraire GPS</h2>
+          <h2>Itinéraires GPS</h2>
           <p className="trip-location">{trip.name}</p>
         </div>
       </div>
 
-      <article className="trip-card">
-        <div className="trip-info">
-          <h3>🧭 Le parcours de l'expédition</h3>
+      <article className="gpx-panel">
+        <h3>🧭 Les parcours de l'expédition</h3>
 
-          <p>
-            Importe ton fichier GPX pour afficher le tracé
-            et le partager avec les participants.
+        <p>
+          Importe plusieurs fichiers GPX pour préparer les différentes
+          étapes de ton aventure et les partager avec les participants.
+        </p>
+
+        <label className="gpx-upload">
+          <strong>＋ Ajouter des parcours GPX</strong>
+          <p className="profile-muted">
+            Tu peux sélectionner plusieurs fichiers en même temps.
           </p>
-
-          <label>Choisir un fichier GPX</label>
           <input
             type="file"
             accept=".gpx,application/gpx+xml,application/xml,text/xml"
+            multiple
             onChange={importGPX}
           />
+        </label>
 
-          {gpxFileName && (
-            <p style={{ marginTop: "15px" }}>
-              <strong>Fichier :</strong> {gpxFileName}
-            </p>
-          )}
-
-          {gpxTrack.length > 0 && (
-            <p style={{ color: "#D9B65D" }}>
-              {gpxTrack.length} points GPS chargés.
-            </p>
-          )}
-
-          {gpxTrack.length > 1 && (
-            <div style={{ marginTop: "20px" }}>
-              <h3>Carte du parcours</h3>
-              <MeetingPointMap
-                meetingPoint={null}
-                onSelect={() => {}}
-                gpxTrack={gpxTrack}
-              />
-            </div>
-          )}
-
-          <button
-            className="primary-button full-button"
-            onClick={saveGPX}
-            disabled={!gpxContent || saving}
-            style={{ marginTop: "20px" }}
-          >
-            {saving ? "Enregistrement..." : "Enregistrer et partager →"}
-          </button>
-
-          <button
-            className="primary-button full-button"
-            onClick={downloadGPX}
-            disabled={!gpxContent}
-            style={{ marginTop: "10px" }}
-          >
-            Télécharger le fichier GPX ↓
-          </button>
-
-          {message && (
-            <p style={{ color: "#D9B65D", marginTop: "15px" }}>
-              {message}
-            </p>
-          )}
+        <div className="gpx-summary">
+          <span className="gpx-stat">
+            {routes.length} parcours
+          </span>
+          <span className="gpx-stat">
+            {totalPoints} points GPS
+          </span>
         </div>
+
+        {routes.length === 0 ? (
+          <p className="profile-muted">
+            Aucun parcours importé pour le moment.
+          </p>
+        ) : (
+          <div>
+            {routes.map((route, index) => (
+              <div className="gpx-route" key={route.id}>
+                <div>
+                  <div className="gpx-route-name">
+                    {String(index + 1).padStart(2, "0")} · {route.name}
+                  </div>
+                  <span className="profile-muted">
+                    {route.track.length} points GPS
+                  </span>
+                </div>
+
+                <div className="gpx-route-actions">
+                  <button
+                    type="button"
+                    onClick={() => downloadRoute(route)}
+                  >
+                    Télécharger ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeRoute(route.id)}
+                  >
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {routes.length > 0 && (
+          <div style={{ marginTop: "25px" }}>
+            <h3>Carte des parcours</h3>
+            <MeetingPointMap
+              meetingPoint={null}
+              onSelect={() => {}}
+              gpxTracks={allTracks}
+            />
+          </div>
+        )}
+
+        <button
+          className="primary-button full-button"
+          onClick={saveGPX}
+          disabled={saving}
+          style={{ marginTop: "25px" }}
+        >
+          {saving ? "Enregistrement..." : "Enregistrer et partager →"}
+        </button>
+
+        {message && (
+          <p className="gpx-message" role="status">
+            {message}
+          </p>
+        )}
       </article>
     </section>
   );
