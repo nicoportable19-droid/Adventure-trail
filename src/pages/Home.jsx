@@ -94,7 +94,24 @@ export default function Home({
         ) : (
           <div className="trip-grid">
             {trips.map((trip) => (
-              <article className="trip-card" key={trip.id}>
+              <article
+                className="trip-card"
+                key={trip.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenTrip(trip)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onOpenTrip(trip);
+                  }
+                }}
+                style={{
+                  cursor: "pointer",
+                  transition: "transform 0.2s ease, border-color 0.2s ease",
+                }}
+                aria-label={`Ouvrir l'aventure ${trip.name}`}
+              >
                 <div className="trip-art">
                   <span className="trip-emoji">
                     {trip.icon || "🏍️"}
@@ -132,13 +149,6 @@ export default function Home({
                       ? "Organisateur"
                       : "Participant"}
                   </p>
-
-                  <button
-                    className="trip-link"
-                    onClick={() => onOpenTrip(trip)}
-                  >
-                    Ouvrir l'aventure <span>→</span>
-                  </button>
                 </div>
               </article>
             ))}
@@ -146,7 +156,6 @@ export default function Home({
         )}
       </section>
 
-      {/* COMMUNAUTÉ */}
       <section className="trips-section community-home">
         <div className="section-heading">
           <div>
@@ -198,6 +207,16 @@ export default function Home({
 
         .community-home {
           margin-top: 45px;
+        }
+
+        .trip-card[role="button"]:hover {
+          transform: translateY(-4px);
+          border-color: #D9B65D;
+        }
+
+        .trip-card[role="button"]:focus-visible {
+          outline: 2px solid #D9B65D;
+          outline-offset: 3px;
         }
 
         @media (max-width: 520px) {
