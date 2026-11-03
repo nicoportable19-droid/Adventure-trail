@@ -1,3 +1,4 @@
+
 export default function Home({
   trips = [],
   participantCounts = {},
@@ -117,9 +118,7 @@ export default function Home({
 
                     <span>
                       ♟ {
-                        participantCounts[trip.id] ??
-                        trip.participants ??
-                        1
+                        participantCounts[trip.id] ?? "…"
                       } participant(s)
                     </span>
                   </div>
