@@ -1,4 +1,3 @@
-
 export default function Home({
   trips = [],
   participantCounts = {},
@@ -7,6 +6,7 @@ export default function Home({
   onCreate = () => {},
   onJoin = () => {},
   onOpenTrip = () => {},
+  onOpenCommunity = () => {},
 }) {
   return (
     <>
@@ -51,6 +51,7 @@ export default function Home({
             <span className="eyebrow">
               VOTRE GARAGE À AVENTURES
             </span>
+
             <h2>
               Mes road trips <span>({trips.length})</span>
             </h2>
@@ -72,7 +73,9 @@ export default function Home({
         {trips.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏍️</div>
+
             <h3>Prêt à prendre la route ?</h3>
+
             <p>
               Crée ton premier road trip ou rejoins une aventure
               avec le code transmis par un organisateur.
@@ -114,12 +117,13 @@ export default function Home({
                   <h3>{trip.name}</h3>
 
                   <div className="trip-meta">
-                    <span>◷ {trip.dates || "Dates à définir"}</span>
+                    <span>
+                      ◷ {trip.dates || "Dates à définir"}
+                    </span>
 
                     <span>
-                      ♟ {
-                        participantCounts[trip.id] ?? "…"
-                      } participant(s)
+                      ♟ {participantCounts[trip.id] ?? "…"}
+                      {" "}participant(s)
                     </span>
                   </div>
 
@@ -142,6 +146,39 @@ export default function Home({
         )}
       </section>
 
+      {/* COMMUNAUTÉ */}
+      <section className="trips-section community-home">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              RENCONTREZ LES RIDERS
+            </span>
+
+            <h2>
+              La communauté <span>🏍️</span>
+            </h2>
+          </div>
+        </div>
+
+        <div className="empty-state">
+          <div className="empty-icon">🤝</div>
+
+          <h3>Rouler ensemble</h3>
+
+          <p>
+            Découvrez les profils des riders, leurs motos
+            et leurs aventures.
+          </p>
+
+          <button
+            className="primary-button"
+            onClick={onOpenCommunity}
+          >
+            Découvrir la communauté →
+          </button>
+        </div>
+      </section>
+
       <style>{`
         .home-actions {
           display: flex;
@@ -157,6 +194,10 @@ export default function Home({
 
         .home-actions button {
           min-height: 46px;
+        }
+
+        .community-home {
+          margin-top: 45px;
         }
 
         @media (max-width: 520px) {
