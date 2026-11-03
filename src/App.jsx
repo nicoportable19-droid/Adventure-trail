@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -45,6 +46,9 @@ export default function App() {
   const [ownerTrips, setOwnerTrips] = useState([]);
   const [joinedTrips, setJoinedTrips] = useState([]);
 
+  // Nombre réel des membres de chaque aventure
+  const [participantCounts, setParticipantCounts] = useState({});
+
   const [firebaseStatus, setFirebaseStatus] = useState("Connexion...");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -82,6 +86,36 @@ export default function App() {
     );
   }, [ownerTrips, joinedTrips]);
 
+  // Compter les membres de chaque aventure en temps réel
+  useEffect(() => {
+    if (!userId || trips.length === 0) {
+      setParticipantCounts({});
+      return;
+    }
+
+    const unsubscribers = trips.map((trip) =>
+      onSnapshot(
+        collection(db, "trips", trip.id, "members"),
+        (snapshot) => {
+          setParticipantCounts((current) => ({
+            ...current,
+            [trip.id]: snapshot.size,
+          }));
+        },
+        (error) => {
+          console.error(
+            "Lecture du nombre de participants :",
+            error
+          );
+        }
+      )
+    );
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [userId, trips]);
+
   // Surveiller la connexion au compte Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -99,6 +133,7 @@ export default function App() {
         setTripMembers([]);
         setShowProfile(false);
         setProfilePseudo("");
+        setParticipantCounts({});
       }
     });
 
@@ -651,6 +686,7 @@ export default function App() {
       ) : (
         <Home
           trips={trips}
+          participantCounts={participantCounts}
           firebaseStatus={firebaseStatus}
           errorMessage={errorMessage}
           onCreate={() => setShowCreate(true)}
