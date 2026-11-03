@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -550,9 +549,10 @@ export default function App() {
           white-space: nowrap;
         }
 
-        /* Téléphone en portrait uniquement */
+        /* Affichage mobile */
         @media screen and (max-width: 650px) {
           .topbar {
+            height: auto;
             display: flex;
             flex-direction: column;
             align-items: stretch;
