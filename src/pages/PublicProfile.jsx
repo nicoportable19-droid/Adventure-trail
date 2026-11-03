@@ -1,4 +1,4 @@
-```jsx
+
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
@@ -123,4 +123,4 @@ export default function PublicProfile({ userId, onBack }) {
     </section>
   );
 }
-```
+
