@@ -16,6 +16,7 @@ export default function Trip({
   onSave,
   onCreateInvite,
   creatingInvite,
+  onOpenProfile = () => {},
   onBack,
 }) {
   const [activePage, setActivePage] = useState("home");
@@ -23,11 +24,21 @@ export default function Trip({
   const [isEditingDetails, setIsEditingDetails] = useState(false);
 
   if (activePage === "gpx") {
-    return <GpxPage trip={trip} onBack={() => setActivePage("home")} />;
+    return (
+      <GpxPage
+        trip={trip}
+        onBack={() => setActivePage("home")}
+      />
+    );
   }
 
   if (activePage === "map") {
-    return <MeetingPoint trip={trip} onBack={() => setActivePage("home")} />;
+    return (
+      <MeetingPoint
+        trip={trip}
+        onBack={() => setActivePage("home")}
+      />
+    );
   }
 
   if (activePage === "equipment") {
@@ -55,7 +66,9 @@ export default function Trip({
       await navigator.clipboard.writeText(trip.inviteCode);
       setCopyStatus("Code copié !");
     } catch (error) {
-      setCopyStatus("Copie impossible. Sélectionne le code manuellement.");
+      setCopyStatus(
+        "Copie impossible. Sélectionne le code manuellement."
+      );
     }
   }
 
@@ -136,46 +149,55 @@ export default function Trip({
                 <h3>Détails de l'aventure</h3>
               </div>
 
-              {trip.myRole === "owner" && !isEditingDetails && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingDetails(true)}
-                  aria-label="Modifier les détails de l'aventure"
-                  title="Modifier les détails"
-                  style={{
-                    border: "1px solid rgba(217, 182, 93, 0.45)",
-                    background: "rgba(217, 182, 93, 0.12)",
-                    color: "#D9B65D",
-                    borderRadius: "10px",
-                    width: "38px",
-                    height: "38px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "19px",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                >
-                  ✏️
-                </button>
-              )}
+              {trip.myRole === "owner" &&
+                !isEditingDetails && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingDetails(true)}
+                    aria-label="Modifier les détails de l'aventure"
+                    title="Modifier les détails"
+                    style={{
+                      border:
+                        "1px solid rgba(217, 182, 93, 0.45)",
+                      background:
+                        "rgba(217, 182, 93, 0.12)",
+                      color: "#D9B65D",
+                      borderRadius: "10px",
+                      width: "38px",
+                      height: "38px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "19px",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✏️
+                  </button>
+                )}
             </div>
 
             {isEditingDetails ? (
               <form onSubmit={saveDetails}>
                 <label>Nom de l'aventure</label>
+
                 <input
                   value={editName}
-                  onChange={(event) => setEditName(event.target.value)}
+                  onChange={(event) =>
+                    setEditName(event.target.value)
+                  }
                   placeholder="Nom du road trip"
                   required
                 />
 
                 <label>Destination</label>
+
                 <input
                   value={editLocation}
-                  onChange={(event) => setEditLocation(event.target.value)}
+                  onChange={(event) =>
+                    setEditLocation(event.target.value)
+                  }
                   placeholder="Destination"
                 />
 
@@ -192,7 +214,9 @@ export default function Trip({
                     type="submit"
                     disabled={savingDetails}
                   >
-                    {savingDetails ? "Enregistrement..." : "Enregistrer"}
+                    {savingDetails
+                      ? "Enregistrement..."
+                      : "Enregistrer"}
                   </button>
 
                   <button
@@ -211,13 +235,17 @@ export default function Trip({
                   <strong>Destination :</strong>{" "}
                   {trip.location || "À définir"}
                 </p>
+
                 <p>
-                  <strong>Dates :</strong> {trip.dates || "À définir"}
+                  <strong>Dates :</strong>{" "}
+                  {trip.dates || "À définir"}
                 </p>
+
                 <p>
                   <strong>Statut :</strong>{" "}
                   {trip.status || "Préparation"}
                 </p>
+
                 <p>
                   <strong>Ton rôle :</strong>{" "}
                   {trip.myRole === "owner"
@@ -252,7 +280,12 @@ export default function Trip({
               </button>
 
               {copyStatus && (
-                <p style={{ color: "#D9B65D", marginTop: "10px" }}>
+                <p
+                  style={{
+                    color: "#D9B65D",
+                    marginTop: "10px",
+                  }}
+                >
                   {copyStatus}
                 </p>
               )}
@@ -260,7 +293,8 @@ export default function Trip({
           ) : trip.myRole === "owner" ? (
             <>
               <p>
-                Aucun code de partage n'est encore créé pour cette aventure.
+                Aucun code de partage n'est encore créé
+                pour cette aventure.
               </p>
 
               <button
@@ -275,7 +309,8 @@ export default function Trip({
             </>
           ) : (
             <p>
-              Le code de partage n'est pas disponible pour cette aventure.
+              Le code de partage n'est pas disponible
+              pour cette aventure.
             </p>
           )}
 
@@ -283,7 +318,8 @@ export default function Trip({
             style={{
               marginTop: "25px",
               paddingTop: "20px",
-              borderTop: "1px solid rgba(217, 182, 93, 0.2)",
+              borderTop:
+                "1px solid rgba(217, 182, 93, 0.2)",
             }}
           >
             <h3 style={{ marginBottom: "15px" }}>
@@ -295,16 +331,35 @@ export default function Trip({
             ) : (
               <div className="trip-grid">
                 {tripMembers.map((member) => (
-                  <article className="trip-card" key={member.id}>
+                  <button
+                    type="button"
+                    className="trip-card"
+                    key={member.id}
+                    onClick={() =>
+                      onOpenProfile(member.uid || member.id)
+                    }
+                    style={{
+                      textAlign: "left",
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
                     <div className="trip-info">
-                      <h3>👤 {member.firstName || "Rider"}</h3>
+                      <h3>
+                        👤 {member.firstName || "Rider"}
+                      </h3>
+
                       <p className="trip-location">
                         {member.role === "owner"
                           ? "Organisateur"
                           : "Participant"}
                       </p>
+
+                      <span className="adventure-menu-link">
+                        Voir le profil →
+                      </span>
                     </div>
-                  </article>
+                  </button>
                 ))}
               </div>
             )}
@@ -314,8 +369,12 @@ export default function Trip({
 
       {/* ORGANISATION DE L'EXPÉDITION */}
       <div style={{ marginTop: "40px" }}>
-        <span className="eyebrow">ORGANISATION DE L'EXPÉDITION</span>
+        <span className="eyebrow">
+          ORGANISATION DE L'EXPÉDITION
+        </span>
+
         <h2>Préparons l'aventure</h2>
+
         <p className="trip-location">
           Retrouvez ici tous les outils pour organiser votre road trip.
         </p>
@@ -327,14 +386,19 @@ export default function Trip({
               type="button"
               className="trip-card adventure-menu-card"
               onClick={() => setActivePage(section.id)}
-              style={{ textAlign: "left", cursor: "pointer" }}
+              style={{
+                textAlign: "left",
+                cursor: "pointer",
+              }}
             >
               <div className="trip-info">
                 <span className="adventure-menu-icon">
                   {section.icon}
                 </span>
+
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
+
                 <span className="adventure-menu-link">
                   OUVRIR →
                 </span>
