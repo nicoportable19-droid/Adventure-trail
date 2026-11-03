@@ -1,3 +1,4 @@
+```jsx
 import {
   MapContainer,
   TileLayer,
@@ -21,14 +22,16 @@ function MapClick({ onSelect }) {
   return null;
 }
 
-function FitRoute({ route }) {
+function FitRoutes({ routes }) {
   const map = useMap();
 
   useEffect(() => {
-    if (route && route.length > 1) {
-      map.fitBounds(route, { padding: [30, 30] });
+    const points = routes.flat();
+
+    if (points.length > 1) {
+      map.fitBounds(points, { padding: [30, 30] });
     }
-  }, [route, map]);
+  }, [routes, map]);
 
   return null;
 }
@@ -37,12 +40,32 @@ export default function MeetingPointMap({
   meetingPoint,
   onSelect,
   gpxTrack = [],
+  gpxTracks = [],
 }) {
+  const routes = gpxTracks.length
+    ? gpxTracks
+    : gpxTrack.length
+      ? [gpxTrack]
+      : [];
+
+  const allPoints = routes.flat();
+
   const center = meetingPoint
     ? [meetingPoint.lat, meetingPoint.lng]
-    : gpxTrack.length > 0
-      ? gpxTrack[0]
+    : allPoints.length > 0
+      ? allPoints[0]
       : [46.6, 2.2];
+
+  const hasRoutes = routes.some((route) => route.length > 1);
+
+  const routeColors = [
+    "#D9B65D",
+    "#4FA3D1",
+    "#65B889",
+    "#D77C55",
+    "#A78BDB",
+    "#D66C9B",
+  ];
 
   return (
     <div style={{ width: "100%" }}>
@@ -69,25 +92,27 @@ export default function MeetingPointMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <MapClick onSelect={onSelect} />
+          {onSelect && <MapClick onSelect={onSelect} />}
 
           {meetingPoint && (
             <Marker position={[meetingPoint.lat, meetingPoint.lng]} />
           )}
 
-          {gpxTrack.length > 1 && (
-            <>
+          {routes.map((route, index) =>
+            route.length > 1 ? (
               <Polyline
-                positions={gpxTrack}
+                key={index}
+                positions={route}
                 pathOptions={{
-                  color: "#D9B65D",
+                  color: routeColors[index % routeColors.length],
                   weight: 5,
                   opacity: 0.9,
                 }}
               />
-              <FitRoute route={gpxTrack} />
-            </>
+            ) : null
           )}
+
+          {hasRoutes && <FitRoutes routes={routes} />}
         </MapContainer>
       </div>
 
@@ -98,11 +123,13 @@ export default function MeetingPointMap({
         </p>
       )}
 
-      {gpxTrack.length > 1 && (
+      {hasRoutes && (
         <p style={{ color: "#D9B65D", fontSize: "13px" }}>
-          Parcours GPS affiché : {gpxTrack.length} points
+          {routes.filter((route) => route.length > 1).length} parcours affiché(s)
+          · {allPoints.length} points GPS
         </p>
       )}
     </div>
   );
 }
+```
