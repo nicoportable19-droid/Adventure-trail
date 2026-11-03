@@ -150,6 +150,7 @@ export default function EquipmentPage({
       array.findIndex((other) => other.uid === member.uid) === index
   );
 
+  // Initialisation de la check-list et import du modèle favori
   useEffect(() => {
     if (!tripId || !currentUid) return;
 
@@ -171,7 +172,9 @@ export default function EquipmentPage({
       },
       () => {
         setLoading(false);
-        setError("Impossible de charger la liste. Vérifie les règles Firebase.");
+        setError(
+          "Impossible de charger la liste. Vérifie les règles Firebase."
+        );
       }
     );
 
@@ -179,11 +182,13 @@ export default function EquipmentPage({
       try {
         const configSnapshot = await getDoc(configRef);
 
+        // La liste a déjà été initialisée : ne rien importer à nouveau.
         if (configSnapshot.exists()) return;
 
         const batch = writeBatch(db);
         let index = 0;
 
+        // 1. Ajouter la check-list de base
         checklist.forEach((section) => {
           section.items.forEach((name) => {
             index += 1;
@@ -209,14 +214,55 @@ export default function EquipmentPage({
           });
         });
 
+        // 2. Importer les équipements de la liste favorite choisie
+        const preset = trip.equipmentPreset;
+
+        if (preset && Array.isArray(preset.items)) {
+          preset.items.forEach((item, favoriteIndex) => {
+            if (!item.name?.trim()) return;
+
+            const itemRef = doc(
+              db,
+              "trips",
+              tripId,
+              "equipment",
+              `favorite-${String(favoriteIndex + 1).padStart(3, "0")}`
+            );
+
+            batch.set(itemRef, {
+              name: item.name.trim(),
+              category:
+                item.category || "⭐ MATÉRIEL PERSONNALISÉ",
+              toTakeBy: {},
+              takenBy: {},
+              broughtBy: {},
+              createdBy: currentUid,
+              isDefault: false,
+              isFavoritePreset: true,
+              sourceListName: preset.listName || "",
+              createdAt: serverTimestamp(),
+            });
+          });
+        }
+
+        // 3. Marquer la check-list comme initialisée
         batch.set(configRef, {
           initialized: true,
+          favoriteListName: trip.equipmentPreset?.listName || null,
           createdAt: serverTimestamp(),
         });
 
         await batch.commit();
-      } catch {
-        setError("Impossible de préparer la check-list.");
+        setError("");
+      } catch (initializationError) {
+        console.error(
+          "Initialisation de la check-list :",
+          initializationError
+        );
+
+        setError(
+          "Impossible de préparer la check-list. Vérifie les règles Firebase."
+        );
       }
     }
 
@@ -245,7 +291,8 @@ export default function EquipmentPage({
 
       setNewItem("");
       setError("");
-    } catch {
+    } catch (addError) {
+      console.error(addError);
       setError("Impossible d'ajouter cet élément.");
     }
   }
@@ -265,7 +312,8 @@ export default function EquipmentPage({
       );
 
       setError("");
-    } catch {
+    } catch (toggleError) {
+      console.error(toggleError);
       setError("Impossible de modifier la case « À prendre ».");
     }
   }
@@ -287,7 +335,8 @@ export default function EquipmentPage({
       );
 
       setError("");
-    } catch {
+    } catch (toggleError) {
+      console.error(toggleError);
       setError("Impossible de modifier ta case « Pris ».");
     }
   }
@@ -299,11 +348,17 @@ export default function EquipmentPage({
       trip.myRole === "owner" || item.createdBy === currentUid;
 
     if (!canDelete) {
-      setError("Seul le créateur ou l'organisateur peut supprimer cet élément.");
+      setError(
+        "Seul le créateur ou l'organisateur peut supprimer cet élément."
+      );
       return;
     }
 
-    if (!window.confirm(`Supprimer « ${item.name} » pour tout le monde ?`)) {
+    if (
+      !window.confirm(
+        `Supprimer « ${item.name} » pour tout le monde ?`
+      )
+    ) {
       return;
     }
 
@@ -311,16 +366,20 @@ export default function EquipmentPage({
       await deleteDoc(
         doc(db, "trips", tripId, "equipment", item.id)
       );
+
       setError("");
-    } catch {
+    } catch (deleteError) {
+      console.error(deleteError);
       setError("Impossible de supprimer cet élément.");
     }
   }
 
+  // Équipements ajoutés manuellement
   const customItems = items.filter(
     (item) => item.category === "➕ MATÉRIEL AJOUTÉ"
   );
 
+  // Catégories de la check-list de base
   const sections = checklist.map((section) => ({
     ...section,
     items: items.filter(
@@ -328,15 +387,48 @@ export default function EquipmentPage({
     ),
   }));
 
+  // Catégories supplémentaires issues des listes favorites
+  const baseCategories = checklist.map(
+    (section) => section.category
+  );
+
+  const favoriteCategories = [
+    ...new Set(
+      items
+        .filter(
+          (item) =>
+            item.isFavoritePreset &&
+            !baseCategories.includes(item.category)
+        )
+        .map((item) => item.category)
+    ),
+  ];
+
+  const extraFavoriteSections = favoriteCategories.map(
+    (category) => ({
+      category,
+      items: items.filter(
+        (item) =>
+          item.category === category &&
+          item.isFavoritePreset
+      ),
+    })
+  );
+
   const checkedCount = items.filter(
     (item) =>
-      item.takenBy?.[currentUid] || item.broughtBy?.[currentUid]
+      item.takenBy?.[currentUid] ||
+      item.broughtBy?.[currentUid]
   ).length;
 
   const departureDate =
     typeof trip?.dates === "string" ? trip.dates : "";
 
   function renderTable(sectionItems) {
+    if (!sectionItems.length) {
+      return null;
+    }
+
     return (
       <div className="equipment-table-scroll">
         <table className="equipment-table">
@@ -361,10 +453,17 @@ export default function EquipmentPage({
             <tr>
               {members.map((member) => (
                 <>
-                  <th key={`${member.uid}-take`} className="equipment-take-heading">
+                  <th
+                    key={`${member.uid}-take`}
+                    className="equipment-take-heading"
+                  >
                     À prendre
                   </th>
-                  <th key={`${member.uid}-taken`} className="equipment-taken-heading">
+
+                  <th
+                    key={`${member.uid}-taken`}
+                    className="equipment-taken-heading"
+                  >
                     Pris
                   </th>
                 </>
@@ -382,6 +481,19 @@ export default function EquipmentPage({
                 <tr key={item.id}>
                   <td className="equipment-name-column">
                     {item.name}
+
+                    {item.isFavoritePreset && (
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: "11px",
+                          opacity: 0.65,
+                          marginTop: "3px",
+                        }}
+                      >
+                        Liste favorite
+                      </span>
+                    )}
                   </td>
 
                   {members.map((member) => {
@@ -476,6 +588,12 @@ export default function EquipmentPage({
         Date du départ : {departureDate || "À définir"}
       </p>
 
+      {trip?.equipmentPreset?.listName && (
+        <p className="equipment-help">
+          ⭐ Modèle utilisé : {trip.equipmentPreset.listName}
+        </p>
+      )}
+
       <div className="equipment-progress">
         <strong>
           Ma préparation : {checkedCount} / {items.length} éléments pris
@@ -518,6 +636,16 @@ export default function EquipmentPage({
       ) : (
         <>
           {sections.map((section) => (
+            <section
+              className="equipment-category"
+              key={section.category}
+            >
+              <h3>{section.category}</h3>
+              {renderTable(section.items)}
+            </section>
+          ))}
+
+          {extraFavoriteSections.map((section) => (
             <section
               className="equipment-category"
               key={section.category}
