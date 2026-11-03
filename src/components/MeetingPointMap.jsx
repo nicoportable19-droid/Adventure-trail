@@ -44,9 +44,11 @@ function createParticipantIcon(color) {
   });
 }
 
-function MapClick({ onSelect }) {
+function MapClick({ onSelect, editable }) {
   useMapEvents({
     click(event) {
+      if (!editable || !onSelect) return;
+
       onSelect({
         lat: event.latlng.lat,
         lng: event.latlng.lng,
@@ -96,10 +98,10 @@ export default function MeetingPointMap({
   meetingPoint,
   myColor = "#D9B65D",
   onSelect,
+  editable = false,
   gpxTrack = [],
   gpxTracks = [],
 }) {
-  // Compatibilité avec l'ancien nom "meetingPoint"
   const currentPoint = myMeetingPoint || meetingPoint || null;
 
   const routes = gpxTracks.length
@@ -140,7 +142,9 @@ export default function MeetingPointMap({
   return (
     <div style={{ width: "100%" }}>
       <p style={{ color: "#D9B65D", marginBottom: "10px" }}>
-        Clique sur la carte pour placer ou déplacer ton point de rassemblement.
+        {editable
+          ? "Mode modification : clique sur la carte pour déplacer le marqueur."
+          : "La carte est en lecture seule. Utilise le bouton pour modifier le point."}
       </p>
 
       <div
@@ -155,7 +159,11 @@ export default function MeetingPointMap({
         <MapContainer
           center={center}
           zoom={currentPoint || validMeetingPoints.length ? 12 : 6}
-          style={{ height: "100%", width: "100%" }}
+          style={{
+            height: "100%",
+            width: "100%",
+            cursor: editable ? "crosshair" : "grab",
+          }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -164,7 +172,7 @@ export default function MeetingPointMap({
 
           <RecenterMap point={currentPoint} />
 
-          {onSelect && <MapClick onSelect={onSelect} />}
+          <MapClick onSelect={onSelect} editable={editable} />
 
           {validMeetingPoints.map((member) => (
             <Marker
@@ -189,7 +197,8 @@ export default function MeetingPointMap({
                   Number(currentPoint.lng),
                 ]}
                 icon={createParticipantIcon(myColor)}
-                title="Ton point de rassemblement"
+                title="Point de rendez-vous"
+                interactive={false}
               />
             )}
 
