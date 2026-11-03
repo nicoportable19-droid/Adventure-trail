@@ -290,6 +290,33 @@ export default function Profile({ user = auth.currentUser, onBack }) {
     setMessage("Nouvelle liste créée. Pense à enregistrer tes listes.");
   }
 
+  // Dupliquer une liste avec tous ses équipements
+  function duplicateEquipmentList() {
+    if (!activeEquipmentList) return;
+
+    if (equipmentLists.length >= 9) {
+      setError("Tu peux créer jusqu'à 9 listes de matériel.");
+      setMessage("");
+      return;
+    }
+
+    const duplicatedList = {
+      id: createId(),
+      name: `Copie de ${activeEquipmentList.name}`.slice(0, 40),
+      items: (activeEquipmentList.items || []).map((item) => ({
+        ...item,
+        id: createId(),
+      })),
+    };
+
+    setEquipmentLists((current) => [...current, duplicatedList]);
+    setActiveEquipmentListId(duplicatedList.id);
+    setError("");
+    setMessage(
+      "Liste dupliquée. Tu peux maintenant la modifier indépendamment, puis enregistrer tes listes."
+    );
+  }
+
   function renameEquipmentList() {
     if (!activeEquipmentList) return;
 
@@ -435,7 +462,6 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           bike.capacity.trim()
       );
 
-      // Profil privé : informations personnelles
       const profileData = {
         pseudo: pseudo.trim(),
         photoURL,
@@ -453,7 +479,6 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         { merge: true }
       );
 
-      // Profil public : informations visibles dans la communauté
       const publicProfileData = {
         pseudo: pseudo.trim(),
         photoURL,
@@ -470,12 +495,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         { merge: true }
       );
 
-      // Modification de l'adresse e-mail
       if (email.trim() && email.trim() !== user.email) {
         await updateEmail(auth.currentUser, email.trim());
       }
 
-      // Modification du mot de passe
       if (newPassword) {
         if (newPassword.length < 6) {
           throw new Error(
@@ -556,6 +579,12 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           gap: 20px;
           flex-wrap: wrap;
           margin: 28px 0;
+          padding: 28px 30px;
+          border: 1px solid rgba(217,182,93,.22);
+          border-radius: 18px;
+          background:
+            radial-gradient(circle at 90% 10%, rgba(217,182,93,.13), transparent 34%),
+            linear-gradient(135deg, #20211d 0%, #171814 72%);
         }
 
         .profile-page .profile-heading h2 {
@@ -568,15 +597,26 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         }
 
         .profile-page .profile-card {
+          position: relative;
+          overflow: hidden;
           background: var(--profile-card);
           border: 1px solid var(--profile-border);
           border-radius: 14px;
           padding: 24px;
           min-width: 0;
+          box-shadow: 0 12px 32px rgba(0,0,0,.14);
+          transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .profile-page .profile-card:hover {
+          border-color: rgba(217,182,93,.38);
+          box-shadow: 0 16px 38px rgba(0,0,0,.2);
         }
 
         .profile-page .profile-card h3 {
           margin: 8px 0 20px;
+          font-size: 20px;
+          letter-spacing: -.3px;
         }
 
         .profile-page .profile-card .eyebrow {
@@ -642,6 +682,7 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           border-radius: 9px;
           background: #20211d;
           cursor: pointer;
+          transition: border-color .2s ease, background .2s ease;
         }
 
         .profile-page .profile-choice:has(input:checked) {
@@ -704,7 +745,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         }
 
         .profile-page .profile-save {
+          min-height: 48px;
           margin: 26px 0 10px;
+          border-radius: 10px;
+          letter-spacing: .2px;
         }
 
         .profile-page .profile-file {
@@ -729,20 +773,65 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           gap: 10px;
           flex-wrap: wrap;
           margin: 18px 0;
+          padding: 14px;
+          border: 1px solid rgba(217,182,93,.18);
+          border-radius: 12px;
+          background: rgba(255,255,255,.025);
         }
 
         .profile-page .equipment-list-toolbar select {
           flex: 1;
           min-width: 180px;
+          min-height: 44px;
+          padding: 0 14px;
+          border: 1px solid #4a493d;
+          border-radius: 9px;
+          background: #24251f;
+          color: #f0eadb;
+          color-scheme: dark;
+        }
+
+        .profile-page .equipment-list-toolbar select option {
+          background: #24251f;
+          color: #f0eadb;
+        }
+
+        .profile-page .equipment-list-toolbar button,
+        .profile-page .equipment-create button {
+          min-height: 42px;
+          border-radius: 9px;
+          transition: background .18s ease, border-color .18s ease, transform .18s ease;
+        }
+
+        .profile-page .equipment-list-toolbar button:hover:not(:disabled),
+        .profile-page .equipment-create button:hover:not(:disabled) {
+          transform: translateY(-1px);
+          border-color: var(--profile-sand);
+        }
+
+        .profile-page .equipment-duplicate-button {
+          border-color: rgba(217,182,93,.48);
+          color: var(--profile-light);
+          background: rgba(217,182,93,.07);
         }
 
         .profile-page .equipment-category {
           margin-top: 22px;
+          padding: 15px 16px 10px;
+          border: 1px solid rgba(255,255,255,.055);
+          border-radius: 12px;
+          background: rgba(255,255,255,.018);
         }
 
         .profile-page .equipment-category h4 {
+          display: flex;
+          align-items: center;
+          gap: 9px;
           color: var(--profile-light);
           margin: 12px 0;
+          font-size: 14px;
+          letter-spacing: .5px;
+          text-transform: uppercase;
         }
 
         .profile-page .equipment-item {
@@ -752,9 +841,15 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           gap: 12px;
           padding: 10px 12px;
           margin: 7px 0;
-          border: 1px solid #38382f;
+          border: 1px solid rgba(255,255,255,.07);
           border-radius: 8px;
           background: #20211d;
+          transition: background .18s ease, border-color .18s ease;
+        }
+
+        .profile-page .equipment-item:hover {
+          background: rgba(217,182,93,.055);
+          border-color: rgba(217,182,93,.25);
         }
 
         .profile-page .equipment-item label {
@@ -764,6 +859,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           flex: 1;
           min-width: 0;
           cursor: pointer;
+        }
+
+        .profile-page .equipment-item label span {
+          overflow-wrap: anywhere;
         }
 
         .profile-page .equipment-item input {
@@ -791,10 +890,11 @@ export default function Profile({ user = auth.currentUser, onBack }) {
 
         .profile-page .equipment-create {
           display: flex;
+          align-items: center;
           gap: 10px;
           flex-wrap: wrap;
           margin-top: 24px;
-          padding-top: 20px;
+          padding: 20px 0 0;
           border-top: 1px solid #38382f;
         }
 
@@ -804,9 +904,18 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         }
 
         .profile-page .equipment-count {
-          color: #999;
-          font-size: 12px;
           margin-left: auto;
+          padding: 7px 11px;
+          border: 1px solid rgba(217,182,93,.2);
+          border-radius: 999px;
+          color: var(--profile-light);
+          background: rgba(217,182,93,.06);
+          font-size: 12px;
+        }
+
+        .profile-page button:disabled {
+          opacity: .42;
+          cursor: not-allowed;
         }
 
         @media (max-width: 700px) {
@@ -816,6 +925,10 @@ export default function Profile({ user = auth.currentUser, onBack }) {
         }
 
         @media (max-width: 600px) {
+          .profile-page .profile-heading {
+            padding: 22px 18px;
+          }
+
           .profile-page .profile-card {
             padding: 18px;
           }
@@ -828,6 +941,18 @@ export default function Profile({ user = auth.currentUser, onBack }) {
             width: 90px;
             height: 90px;
             flex-basis: 90px;
+          }
+
+          .profile-page .equipment-list-toolbar {
+            align-items: stretch;
+          }
+
+          .profile-page .equipment-list-toolbar select {
+            flex-basis: 100%;
+          }
+
+          .profile-page .equipment-list-toolbar button {
+            flex: 1;
           }
         }
       `}</style>
@@ -1116,6 +1241,15 @@ export default function Profile({ user = auth.currentUser, onBack }) {
             disabled={!activeEquipmentList}
           >
             Renommer
+          </button>
+
+          <button
+            type="button"
+            className="outline-button equipment-duplicate-button"
+            onClick={duplicateEquipmentList}
+            disabled={!activeEquipmentList || equipmentLists.length >= 9}
+          >
+            ⧉ Dupliquer
           </button>
 
           <button
