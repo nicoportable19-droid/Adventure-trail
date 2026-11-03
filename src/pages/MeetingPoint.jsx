@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
@@ -11,10 +10,12 @@ export default function MeetingPoint({ trip, onBack }) {
   const [address, setAddress] = useState("");
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     setMeetingPoint(trip.meetingPoint || null);
+    setEditing(false);
   }, [trip.id, trip.meetingPoint]);
 
   async function searchAddress(event) {
@@ -66,7 +67,8 @@ export default function MeetingPoint({ trip, onBack }) {
       }
 
       setMeetingPoint(result);
-      setMessage("Adresse trouvée ! Pense à enregistrer le point.");
+      setEditing(true);
+      setMessage("Adresse trouvée. Vérifie la position puis valide-la.");
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -74,7 +76,7 @@ export default function MeetingPoint({ trip, onBack }) {
     }
   }
 
-  async function saveMeetingPoint() {
+  async function validateMeetingPoint() {
     if (!meetingPoint || saving) return;
 
     setSaving(true);
@@ -86,6 +88,7 @@ export default function MeetingPoint({ trip, onBack }) {
         updatedAt: serverTimestamp(),
       });
 
+      setEditing(false);
       setMessage("Point de rendez-vous enregistré !");
     } catch (error) {
       console.error(error);
@@ -93,6 +96,16 @@ export default function MeetingPoint({ trip, onBack }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleEditClick() {
+    if (editing) {
+      validateMeetingPoint();
+      return;
+    }
+
+    setEditing(true);
+    setMessage("Clique sur la carte pour choisir le nouvel emplacement.");
   }
 
   return (
@@ -134,9 +147,10 @@ export default function MeetingPoint({ trip, onBack }) {
 
           <MeetingPointMap
             meetingPoint={meetingPoint}
+            editable={editing}
             onSelect={(point) => {
               setMeetingPoint(point);
-              setMessage("Position sélectionnée. Pense à l'enregistrer.");
+              setMessage("Position choisie. Clique sur Valider le point.");
             }}
             gpxTracks={(trip.gpxRoutes || [])
               .map((route) => route.track || [])
@@ -146,13 +160,15 @@ export default function MeetingPoint({ trip, onBack }) {
 
           <button
             className="primary-button full-button"
-            onClick={saveMeetingPoint}
-            disabled={!meetingPoint || saving}
+            onClick={handleEditClick}
+            disabled={saving}
             style={{ marginTop: "15px" }}
           >
             {saving
               ? "Enregistrement..."
-              : "Enregistrer le point de rendez-vous →"}
+              : editing
+                ? "Valider le point ✓"
+                : "Modifier le point de rendez-vous"}
           </button>
 
           {message && (
