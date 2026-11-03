@@ -1,4 +1,3 @@
-
 import {
   MapContainer,
   TileLayer,
@@ -58,6 +57,25 @@ function MapClick({ onSelect }) {
   return null;
 }
 
+function RecenterMap({ point }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (
+      point &&
+      Number.isFinite(Number(point.lat)) &&
+      Number.isFinite(Number(point.lng))
+    ) {
+      map.setView(
+        [Number(point.lat), Number(point.lng)],
+        12
+      );
+    }
+  }, [point?.lat, point?.lng, map]);
+
+  return null;
+}
+
 function FitRoutes({ routes }) {
   const map = useMap();
 
@@ -75,11 +93,15 @@ function FitRoutes({ routes }) {
 export default function MeetingPointMap({
   meetingPoints = [],
   myMeetingPoint,
+  meetingPoint,
   myColor = "#D9B65D",
   onSelect,
   gpxTrack = [],
   gpxTracks = [],
 }) {
+  // Compatibilité avec l'ancien nom "meetingPoint"
+  const currentPoint = myMeetingPoint || meetingPoint || null;
+
   const routes = gpxTracks.length
     ? gpxTracks
     : gpxTrack.length
@@ -88,12 +110,19 @@ export default function MeetingPointMap({
 
   const allPoints = routes.flat();
 
-  const center = myMeetingPoint
-    ? [myMeetingPoint.lat, myMeetingPoint.lng]
-    : meetingPoints.length
+  const validMeetingPoints = meetingPoints.filter(
+    (member) =>
+      member.point &&
+      Number.isFinite(Number(member.point.lat)) &&
+      Number.isFinite(Number(member.point.lng))
+  );
+
+  const center = currentPoint
+    ? [Number(currentPoint.lat), Number(currentPoint.lng)]
+    : validMeetingPoints.length
       ? [
-          meetingPoints[0].point.lat,
-          meetingPoints[0].point.lng,
+          Number(validMeetingPoints[0].point.lat),
+          Number(validMeetingPoints[0].point.lng),
         ]
       : allPoints.length
         ? allPoints[0]
@@ -125,7 +154,7 @@ export default function MeetingPointMap({
       >
         <MapContainer
           center={center}
-          zoom={myMeetingPoint || meetingPoints.length ? 12 : 6}
+          zoom={currentPoint || validMeetingPoints.length ? 12 : 6}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
@@ -133,30 +162,36 @@ export default function MeetingPointMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          <RecenterMap point={currentPoint} />
+
           {onSelect && <MapClick onSelect={onSelect} />}
 
-          {meetingPoints.map((member) => (
+          {validMeetingPoints.map((member) => (
             <Marker
               key={member.uid}
               position={[
-                member.point.lat,
-                member.point.lng,
+                Number(member.point.lat),
+                Number(member.point.lng),
               ]}
-              icon={createParticipantIcon(member.color || "#D9B65D")}
+              icon={createParticipantIcon(
+                member.color || "#D9B65D"
+              )}
               title={member.firstName || "Participant"}
             />
           ))}
 
-          {myMeetingPoint && (
-            <Marker
-              position={[
-                myMeetingPoint.lat,
-                myMeetingPoint.lng,
-              ]}
-              icon={createParticipantIcon(myColor)}
-              title="Ton point de rassemblement"
-            />
-          )}
+          {currentPoint &&
+            Number.isFinite(Number(currentPoint.lat)) &&
+            Number.isFinite(Number(currentPoint.lng)) && (
+              <Marker
+                position={[
+                  Number(currentPoint.lat),
+                  Number(currentPoint.lng),
+                ]}
+                icon={createParticipantIcon(myColor)}
+                title="Ton point de rassemblement"
+              />
+            )}
 
           {routes.map((route, index) =>
             route.length > 1 ? (
@@ -172,15 +207,24 @@ export default function MeetingPointMap({
             ) : null
           )}
 
-          {routes.some((route) => route.length > 1) && (
-            <FitRoutes routes={routes} />
-          )}
+          {!currentPoint &&
+            !validMeetingPoints.length &&
+            routes.some((route) => route.length > 1) && (
+              <FitRoutes routes={routes} />
+            )}
         </MapContainer>
       </div>
 
-      {meetingPoints.length > 0 && (
-        <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
-          {meetingPoints.map((member) => (
+      {validMeetingPoints.length > 0 && (
+        <div
+          style={{
+            marginTop: "12px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          {validMeetingPoints.map((member) => (
             <span
               key={member.uid}
               style={{
@@ -196,7 +240,7 @@ export default function MeetingPointMap({
                   width: "10px",
                   height: "10px",
                   borderRadius: "50%",
-                  background: member.color,
+                  background: member.color || "#D9B65D",
                 }}
               />
               {member.firstName || "Rider"}
