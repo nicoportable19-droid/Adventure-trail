@@ -21,12 +21,16 @@ import Trip from "./pages/Trip";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import Community from "./pages/Community";
+import PublicProfile from "./pages/PublicProfile";
+
 import "./style.css";
 import "./auth.css";
 
 function generateInviteCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = new Uint8Array(5);
+
   window.crypto.getRandomValues(bytes);
 
   return Array.from(
@@ -46,7 +50,6 @@ export default function App() {
   const [ownerTrips, setOwnerTrips] = useState([]);
   const [joinedTrips, setJoinedTrips] = useState([]);
 
-  // Nombre réel des membres de chaque aventure
   const [participantCounts, setParticipantCounts] = useState({});
 
   const [firebaseStatus, setFirebaseStatus] = useState("Connexion...");
@@ -55,6 +58,10 @@ export default function App() {
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
+
+  const [publicProfileId, setPublicProfileId] = useState(null);
+  const [profileReturnPage, setProfileReturnPage] = useState("home");
 
   const [tripName, setTripName] = useState("");
   const [tripLocation, setTripLocation] = useState("");
@@ -64,6 +71,7 @@ export default function App() {
 
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [tripMembers, setTripMembers] = useState([]);
+
   const [editName, setEditName] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
@@ -82,11 +90,13 @@ export default function App() {
     const allTrips = [...ownerTrips, ...joinedTrips];
 
     return Array.from(
-      new Map(allTrips.map((trip) => [trip.id, trip])).values()
+      new Map(
+        allTrips.map((trip) => [trip.id, trip])
+      ).values()
     );
   }, [ownerTrips, joinedTrips]);
 
-  // Compter les membres de chaque aventure en temps réel
+  // Nombre réel des participants
   useEffect(() => {
     if (!userId || trips.length === 0) {
       setParticipantCounts({});
@@ -116,7 +126,7 @@ export default function App() {
     };
   }, [userId, trips]);
 
-  // Surveiller la connexion au compte Firebase
+  // Connexion Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -127,11 +137,14 @@ export default function App() {
         setErrorMessage("");
       } else {
         setFirebaseStatus("Non connecté");
+
         setOwnerTrips([]);
         setJoinedTrips([]);
         setSelectedTrip(null);
         setTripMembers([]);
         setShowProfile(false);
+        setShowCommunity(false);
+        setPublicProfileId(null);
         setProfilePseudo("");
         setParticipantCounts({});
       }
@@ -140,7 +153,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Charger le pseudo public du profil
+  // Pseudo du compte connecté
   useEffect(() => {
     if (!userId) {
       setProfilePseudo("");
@@ -153,7 +166,9 @@ export default function App() {
       profileRef,
       (snapshot) => {
         setProfilePseudo(
-          snapshot.exists() ? snapshot.data().pseudo || "" : ""
+          snapshot.exists()
+            ? snapshot.data().pseudo || ""
+            : ""
         );
       },
       (error) => {
@@ -164,7 +179,7 @@ export default function App() {
     return () => unsubscribe();
   }, [userId]);
 
-  // Charger les aventures du compte connecté
+  // Aventures créées et rejointes
   useEffect(() => {
     if (!userId) {
       setOwnerTrips([]);
@@ -194,7 +209,10 @@ export default function App() {
       },
       (error) => {
         console.error("Lecture aventures créées :", error);
-        setErrorMessage("Lecture aventures créées : " + error.message);
+
+        setErrorMessage(
+          "Lecture aventures créées : " + error.message
+        );
       }
     );
 
@@ -220,7 +238,8 @@ export default function App() {
               return {
                 id: tripSnapshot.id,
                 ...tripSnapshot.data(),
-                myRole: memberDoc.data().role || "member",
+                myRole:
+                  memberDoc.data().role || "member",
               };
             })
           );
@@ -230,27 +249,35 @@ export default function App() {
           }
         } catch (error) {
           console.error("Lecture d'une aventure :", error);
-          setErrorMessage("Lecture d'une aventure : " + error.message);
+
+          setErrorMessage(
+            "Lecture d'une aventure : " + error.message
+          );
         }
       },
       (error) => {
         console.error("Lecture des participations :", error);
-        setErrorMessage("Lecture des participations : " + error.message);
+
+        setErrorMessage(
+          "Lecture des participations : " + error.message
+        );
       }
     );
 
     return () => {
       cancelled = true;
+
       if (unsubscribeOwner) unsubscribeOwner();
       if (unsubscribeMembers) unsubscribeMembers();
     };
   }, [userId]);
 
-  // Mise à jour en temps réel de la page détaillée
+  // Mise à jour de l'aventure ouverte et de ses membres
   useEffect(() => {
     if (!selectedTrip?.id || !userId) return;
 
     const tripRef = doc(db, "trips", selectedTrip.id);
+
     const membersRef = collection(
       db,
       "trips",
@@ -296,51 +323,99 @@ export default function App() {
     };
   }, [selectedTrip?.id, userId]);
 
+  // Ouvrir une aventure
   function openTrip(trip) {
     setSelectedTrip(trip);
     setEditName(trip.name || "");
     setEditLocation(trip.location || "");
     setErrorMessage("");
     setTripMembers([]);
+
     setShowProfile(false);
+    setShowCommunity(false);
+    setPublicProfileId(null);
   }
 
+  // Fermer une aventure
   function closeTrip() {
     setSelectedTrip(null);
     setTripMembers([]);
     setErrorMessage("");
+
+    setShowCommunity(false);
+    setPublicProfileId(null);
   }
 
+  // Ouvrir le profil personnel
   function openProfile() {
     setSelectedTrip(null);
     setTripMembers([]);
+
     setShowProfile(true);
+    setShowCommunity(false);
+    setPublicProfileId(null);
     setErrorMessage("");
   }
 
+  // Fermer le profil personnel
   function closeProfile() {
     setShowProfile(false);
+  }
+
+  // Ouvrir la communauté
+  function openCommunity() {
+    setSelectedTrip(null);
+    setTripMembers([]);
+
+    setShowProfile(false);
+    setPublicProfileId(null);
+    setShowCommunity(true);
+    setErrorMessage("");
+  }
+
+  // Ouvrir un profil public
+  function openPublicProfile(uid, returnPage = "home") {
+    if (!uid) return;
+
+    setProfileReturnPage(returnPage);
+    setPublicProfileId(uid);
+    setShowProfile(false);
+    setErrorMessage("");
+  }
+
+  // Retour du profil public
+  function closePublicProfile() {
+    setPublicProfileId(null);
   }
 
   // Déconnexion
   async function handleSignOut() {
     try {
       await signOut(auth);
+
       closeTrip();
-      setShowProfile(false);
+      closeProfile();
+
+      setShowCommunity(false);
+      setPublicProfileId(null);
+
       setCreatedInviteCode("");
       setShowCreate(false);
       setShowJoin(false);
+
       setAuthPage("login");
     } catch (error) {
       console.error(error);
-      setErrorMessage("Impossible de se déconnecter : " + error.message);
+
+      setErrorMessage(
+        "Impossible de se déconnecter : " + error.message
+      );
     }
   }
 
   // Créer un road trip
-  async function createTrip(e) {
-    e.preventDefault();
+  async function createTrip(event) {
+    event.preventDefault();
 
     if (!tripName.trim() || !userId || saving) return;
 
@@ -356,17 +431,21 @@ export default function App() {
         (await getDoc(doc(db, "invites", code))).exists()
       );
 
-      const tripRef = await addDoc(collection(db, "trips"), {
-        ownerId: userId,
-        name: tripName.trim(),
-        location: tripLocation.trim() || "Destination à définir",
-        dates: "Dates à définir",
-        participants: 1,
-        status: "Préparation",
-        icon: "🏍️",
-        inviteCode: code,
-        createdAt: serverTimestamp(),
-      });
+      const tripRef = await addDoc(
+        collection(db, "trips"),
+        {
+          ownerId: userId,
+          name: tripName.trim(),
+          location:
+            tripLocation.trim() || "Destination à définir",
+          dates: "Dates à définir",
+          participants: 1,
+          status: "Préparation",
+          icon: "🏍️",
+          inviteCode: code,
+          createdAt: serverTimestamp(),
+        }
+      );
 
       await setDoc(
         doc(db, "trips", tripRef.id, "members", userId),
@@ -392,8 +471,12 @@ export default function App() {
       setCopyStatus("");
     } catch (error) {
       console.error(error);
+
       setErrorMessage(error.message);
-      alert("Impossible de créer le road trip : " + error.message);
+
+      alert(
+        "Impossible de créer le road trip : " + error.message
+      );
     } finally {
       setSaving(false);
     }
@@ -401,7 +484,11 @@ export default function App() {
 
   // Créer un code pour une ancienne aventure
   async function createInviteCodeForTrip() {
-    if (!selectedTrip || selectedTrip.myRole !== "owner" || saving) {
+    if (
+      !selectedTrip ||
+      selectedTrip.myRole !== "owner" ||
+      saving
+    ) {
       return;
     }
 
@@ -434,7 +521,9 @@ export default function App() {
       setCopyStatus("");
     } catch (error) {
       console.error(error);
+
       setErrorMessage(error.message);
+
       alert("Impossible de créer le code : " + error.message);
     } finally {
       setSaving(false);
@@ -442,8 +531,8 @@ export default function App() {
   }
 
   // Rejoindre un road trip
-  async function joinTrip(e) {
-    e.preventDefault();
+  async function joinTrip(event) {
+    event.preventDefault();
 
     if (!inviteCode.trim() || !userId || saving) return;
 
@@ -452,10 +541,15 @@ export default function App() {
 
     try {
       const code = inviteCode.trim().toUpperCase();
-      const inviteSnapshot = await getDoc(doc(db, "invites", code));
+
+      const inviteSnapshot = await getDoc(
+        doc(db, "invites", code)
+      );
 
       if (!inviteSnapshot.exists()) {
-        throw new Error("Ce code d'invitation est introuvable.");
+        throw new Error(
+          "Ce code d'invitation est introuvable."
+        );
       }
 
       const invite = inviteSnapshot.data();
@@ -476,7 +570,9 @@ export default function App() {
         }
       );
 
-      const tripSnapshot = await getDoc(doc(db, "trips", tripId));
+      const tripSnapshot = await getDoc(
+        doc(db, "trips", tripId)
+      );
 
       setInviteCode("");
       setShowJoin(false);
@@ -488,16 +584,20 @@ export default function App() {
       );
     } catch (error) {
       console.error(error);
+
       setErrorMessage(error.message);
-      alert("Impossible de rejoindre le voyage : " + error.message);
+
+      alert(
+        "Impossible de rejoindre le voyage : " + error.message
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  // Enregistrer les modifications
-  async function saveTripDetails(e) {
-    e.preventDefault();
+  // Enregistrer les modifications d'une aventure
+  async function saveTripDetails(event) {
+    event.preventDefault();
 
     if (!selectedTrip || savingDetails) return;
 
@@ -512,14 +612,17 @@ export default function App() {
     try {
       await updateDoc(doc(db, "trips", selectedTrip.id), {
         name: editName.trim(),
-        location: editLocation.trim() || "Destination à définir",
+        location:
+          editLocation.trim() || "Destination à définir",
         updatedAt: serverTimestamp(),
       });
 
       alert("Les modifications ont bien été enregistrées !");
     } catch (error) {
       console.error(error);
+
       setErrorMessage(error.message);
+
       alert("Impossible d'enregistrer : " + error.message);
     } finally {
       setSavingDetails(false);
@@ -531,6 +634,7 @@ export default function App() {
       <main className="auth-page">
         <div className="auth-card">
           <div className="auth-brand">ADVENTURE TRAIL</div>
+
           <p className="auth-description">
             Vérification de ta connexion...
           </p>
@@ -541,9 +645,13 @@ export default function App() {
 
   if (!user) {
     return authPage === "register" ? (
-      <Register onGoToLogin={() => setAuthPage("login")} />
+      <Register
+        onGoToLogin={() => setAuthPage("login")}
+      />
     ) : (
-      <Login onGoToRegister={() => setAuthPage("register")} />
+      <Login
+        onGoToRegister={() => setAuthPage("register")}
+      />
     );
   }
 
@@ -584,7 +692,6 @@ export default function App() {
           white-space: nowrap;
         }
 
-        /* Affichage mobile */
         @media screen and (max-width: 650px) {
           .topbar {
             height: auto;
@@ -629,13 +736,15 @@ export default function App() {
         <a
           className="brand"
           href="#"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={(event) => {
+            event.preventDefault();
+
             closeTrip();
             closeProfile();
           }}
         >
           <span className="brand-icon">A</span>
+
           <span>
             ADVENTURE<span className="orange">TRAIL</span>
             <small>RIDE · EXPLORE · SHARE</small>
@@ -663,10 +772,23 @@ export default function App() {
         </div>
       </header>
 
+      {/* AFFICHAGE DES PAGES */}
       {showProfile ? (
         <Profile
           user={user}
           onBack={closeProfile}
+        />
+      ) : publicProfileId ? (
+        <PublicProfile
+          userId={publicProfileId}
+          onBack={closePublicProfile}
+        />
+      ) : showCommunity ? (
+        <Community
+          onBack={() => setShowCommunity(false)}
+          onOpenProfile={(uid) =>
+            openPublicProfile(uid, "community")
+          }
         />
       ) : selectedTrip ? (
         <Trip
@@ -681,6 +803,9 @@ export default function App() {
           onSave={saveTripDetails}
           onCreateInvite={createInviteCodeForTrip}
           creatingInvite={saving}
+          onOpenProfile={(uid) =>
+            openPublicProfile(uid, "trip")
+          }
           onBack={closeTrip}
         />
       ) : (
@@ -692,6 +817,7 @@ export default function App() {
           onCreate={() => setShowCreate(true)}
           onJoin={() => setShowJoin(true)}
           onOpenTrip={openTrip}
+          onOpenCommunity={openCommunity}
         />
       )}
 
@@ -701,6 +827,7 @@ export default function App() {
         <span>© 2026</span>
       </footer>
 
+      {/* MODALE CRÉATION */}
       {showCreate && (
         <div
           className="modal-backdrop"
@@ -709,7 +836,7 @@ export default function App() {
           <form
             className="modal"
             onSubmit={createTrip}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
@@ -719,7 +846,10 @@ export default function App() {
               ×
             </button>
 
-            <span className="eyebrow">NOUVELLE EXPÉDITION</span>
+            <span className="eyebrow">
+              NOUVELLE EXPÉDITION
+            </span>
+
             <h2>Créer un road trip</h2>
 
             <p>
@@ -727,17 +857,23 @@ export default function App() {
             </p>
 
             <label>Nom de l'aventure</label>
+
             <input
               value={tripName}
-              onChange={(e) => setTripName(e.target.value)}
+              onChange={(event) =>
+                setTripName(event.target.value)
+              }
               placeholder="Ex. : Tour des Pyrénées"
               required
             />
 
             <label>Destination</label>
+
             <input
               value={tripLocation}
-              onChange={(e) => setTripLocation(e.target.value)}
+              onChange={(event) =>
+                setTripLocation(event.target.value)
+              }
               placeholder="Ex. : France · Pyrénées"
             />
 
@@ -746,12 +882,15 @@ export default function App() {
               type="submit"
               disabled={saving || !userId}
             >
-              {saving ? "Enregistrement..." : "Créer l'aventure →"}
+              {saving
+                ? "Enregistrement..."
+                : "Créer l'aventure →"}
             </button>
           </form>
         </div>
       )}
 
+      {/* MODALE REJOINDRE */}
       {showJoin && (
         <div
           className="modal-backdrop"
@@ -760,7 +899,7 @@ export default function App() {
           <form
             className="modal"
             onSubmit={joinTrip}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
@@ -770,17 +909,22 @@ export default function App() {
               ×
             </button>
 
-            <span className="eyebrow">REJOINDRE UNE ÉQUIPE</span>
+            <span className="eyebrow">
+              REJOINDRE UNE ÉQUIPE
+            </span>
+
             <h2>Bienvenue, rider !</h2>
+
             <p>
               Entre le code transmis par l'organisateur.
             </p>
 
             <label>Code d'invitation</label>
+
             <input
               value={inviteCode}
-              onChange={(e) =>
-                setInviteCode(e.target.value.toUpperCase())
+              onChange={(event) =>
+                setInviteCode(event.target.value.toUpperCase())
               }
               placeholder="Colle ton code ici"
               required
@@ -791,16 +935,22 @@ export default function App() {
               type="submit"
               disabled={saving || !userId}
             >
-              {saving ? "Connexion..." : "Rejoindre le road trip →"}
+              {saving
+                ? "Connexion..."
+                : "Rejoindre le road trip →"}
             </button>
           </form>
         </div>
       )}
 
+      {/* MODALE CODE D'INVITATION */}
       {createdInviteCode && (
         <div className="modal-backdrop">
           <div className="modal">
-            <span className="eyebrow">INVITATION PRÊTE</span>
+            <span className="eyebrow">
+              INVITATION PRÊTE
+            </span>
+
             <h2>Ton équipe t'attend !</h2>
 
             <p>
@@ -824,7 +974,10 @@ export default function App() {
               className="primary-button full-button"
               onClick={async () => {
                 try {
-                  await navigator.clipboard.writeText(createdInviteCode);
+                  await navigator.clipboard.writeText(
+                    createdInviteCode
+                  );
+
                   setCopyStatus("Code copié !");
                 } catch (error) {
                   setCopyStatus(
@@ -839,7 +992,12 @@ export default function App() {
             </button>
 
             {copyStatus && (
-              <p style={{ textAlign: "center", color: "#D9B65D" }}>
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#D9B65D",
+                }}
+              >
                 {copyStatus}
               </p>
             )}
