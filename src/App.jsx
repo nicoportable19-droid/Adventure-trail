@@ -551,7 +551,7 @@ export default function App() {
         }
 
         /* Téléphone en portrait uniquement */
-        @media screen and (max-width: 600px) and (orientation: portrait) {
+        @media screen and (max-width: 650px) {
           .topbar {
             display: flex;
             flex-direction: column;
