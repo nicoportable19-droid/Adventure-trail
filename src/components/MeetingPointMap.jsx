@@ -1,4 +1,4 @@
-```jsx
+
 import {
   MapContainer,
   TileLayer,
@@ -8,6 +8,42 @@ import {
   useMap,
 } from "react-leaflet";
 import { useEffect } from "react";
+import { divIcon } from "leaflet";
+
+function createParticipantIcon(color) {
+  return divIcon({
+    className: "",
+    html: `
+      <div style="
+        width: 30px;
+        height: 30px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          width: 24px;
+          height: 24px;
+          background: ${color};
+          border: 3px solid white;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          box-shadow: 0 2px 7px rgba(0,0,0,.55);
+        "></div>
+        <div style="
+          position: absolute;
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: white;
+        "></div>
+      </div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+  });
+}
 
 function MapClick({ onSelect }) {
   useMapEvents({
@@ -37,7 +73,9 @@ function FitRoutes({ routes }) {
 }
 
 export default function MeetingPointMap({
-  meetingPoint,
+  meetingPoints = [],
+  myMeetingPoint,
+  myColor = "#D9B65D",
   onSelect,
   gpxTrack = [],
   gpxTracks = [],
@@ -50,13 +88,16 @@ export default function MeetingPointMap({
 
   const allPoints = routes.flat();
 
-  const center = meetingPoint
-    ? [meetingPoint.lat, meetingPoint.lng]
-    : allPoints.length > 0
-      ? allPoints[0]
-      : [46.6, 2.2];
-
-  const hasRoutes = routes.some((route) => route.length > 1);
+  const center = myMeetingPoint
+    ? [myMeetingPoint.lat, myMeetingPoint.lng]
+    : meetingPoints.length
+      ? [
+          meetingPoints[0].point.lat,
+          meetingPoints[0].point.lng,
+        ]
+      : allPoints.length
+        ? allPoints[0]
+        : [46.6, 2.2];
 
   const routeColors = [
     "#D9B65D",
@@ -70,7 +111,7 @@ export default function MeetingPointMap({
   return (
     <div style={{ width: "100%" }}>
       <p style={{ color: "#D9B65D", marginBottom: "10px" }}>
-        Touchez la carte pour placer le point de rendez-vous.
+        Clique sur la carte pour placer ou déplacer ton point de rassemblement.
       </p>
 
       <div
@@ -84,7 +125,7 @@ export default function MeetingPointMap({
       >
         <MapContainer
           center={center}
-          zoom={meetingPoint ? 13 : 6}
+          zoom={myMeetingPoint || meetingPoints.length ? 12 : 6}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
@@ -94,8 +135,27 @@ export default function MeetingPointMap({
 
           {onSelect && <MapClick onSelect={onSelect} />}
 
-          {meetingPoint && (
-            <Marker position={[meetingPoint.lat, meetingPoint.lng]} />
+          {meetingPoints.map((member) => (
+            <Marker
+              key={member.uid}
+              position={[
+                member.point.lat,
+                member.point.lng,
+              ]}
+              icon={createParticipantIcon(member.color || "#D9B65D")}
+              title={member.firstName || "Participant"}
+            />
+          ))}
+
+          {myMeetingPoint && (
+            <Marker
+              position={[
+                myMeetingPoint.lat,
+                myMeetingPoint.lng,
+              ]}
+              icon={createParticipantIcon(myColor)}
+              title="Ton point de rassemblement"
+            />
           )}
 
           {routes.map((route, index) =>
@@ -112,18 +172,40 @@ export default function MeetingPointMap({
             ) : null
           )}
 
-          {hasRoutes && <FitRoutes routes={routes} />}
+          {routes.some((route) => route.length > 1) && (
+            <FitRoutes routes={routes} />
+          )}
         </MapContainer>
       </div>
 
-      {meetingPoint && (
-        <p style={{ color: "#aaa", fontSize: "12px" }}>
-          Position : {meetingPoint.lat.toFixed(5)},{" "}
-          {meetingPoint.lng.toFixed(5)}
-        </p>
+      {meetingPoints.length > 0 && (
+        <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          {meetingPoints.map((member) => (
+            <span
+              key={member.uid}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#ddd",
+                fontSize: "12px",
+              }}
+            >
+              <span
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  background: member.color,
+                }}
+              />
+              {member.firstName || "Rider"}
+            </span>
+          ))}
+        </div>
       )}
 
-      {hasRoutes && (
+      {routes.length > 0 && (
         <p style={{ color: "#D9B65D", fontSize: "13px" }}>
           {routes.filter((route) => route.length > 1).length} parcours affiché(s)
           · {allPoints.length} points GPS
@@ -132,4 +214,3 @@ export default function MeetingPointMap({
     </div>
   );
 }
-```
