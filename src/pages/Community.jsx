@@ -1,4 +1,4 @@
-```jsx
+
 import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
@@ -130,4 +130,3 @@ export default function Community({ onBack, onOpenProfile }) {
     </section>
   );
 }
-```
