@@ -67,6 +67,10 @@ export default function App() {
   const [tripLocation, setTripLocation] = useState("");
   const [inviteCode, setInviteCode] = useState("");
 
+  // Listes favorites de matériel
+  const [equipmentLists, setEquipmentLists] = useState([]);
+  const [selectedEquipmentListId, setSelectedEquipmentListId] = useState("");
+
   const [saving, setSaving] = useState(false);
 
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -146,6 +150,8 @@ export default function App() {
         setShowCommunity(false);
         setPublicProfileId(null);
         setProfilePseudo("");
+        setEquipmentLists([]);
+        setSelectedEquipmentListId("");
         setParticipantCounts({});
       }
     });
@@ -153,10 +159,12 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Pseudo du compte connecté
+  // Profil personnel et listes favorites de matériel
   useEffect(() => {
     if (!userId) {
       setProfilePseudo("");
+      setEquipmentLists([]);
+      setSelectedEquipmentListId("");
       return;
     }
 
@@ -165,11 +173,29 @@ export default function App() {
     const unsubscribe = onSnapshot(
       profileRef,
       (snapshot) => {
-        setProfilePseudo(
-          snapshot.exists()
-            ? snapshot.data().pseudo || ""
-            : ""
-        );
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+
+          setProfilePseudo(data.pseudo || "");
+
+          const lists = Array.isArray(data.equipmentLists)
+            ? data.equipmentLists
+            : [];
+
+          setEquipmentLists(lists);
+
+          setSelectedEquipmentListId((current) => {
+            if (current && lists.some((list) => list.id === current)) {
+              return current;
+            }
+
+            return "";
+          });
+        } else {
+          setProfilePseudo("");
+          setEquipmentLists([]);
+          setSelectedEquipmentListId("");
+        }
       },
       (error) => {
         console.error("Lecture du profil :", error);
@@ -423,6 +449,27 @@ export default function App() {
     setErrorMessage("");
 
     try {
+      // Récupérer la liste favorite sélectionnée
+      const selectedEquipmentList = equipmentLists.find(
+        (list) => list.id === selectedEquipmentListId
+      );
+
+      // Copier uniquement les équipements cochés
+      const equipmentPreset = selectedEquipmentList
+        ? {
+            listId: selectedEquipmentList.id,
+            listName: selectedEquipmentList.name,
+            items: (selectedEquipmentList.items || [])
+              .filter(
+                (item) => item.selected && item.name?.trim()
+              )
+              .map((item) => ({
+                name: item.name.trim(),
+                category: item.category || "Matériel ajouté",
+              })),
+          }
+        : null;
+
       let code;
 
       do {
@@ -443,6 +490,10 @@ export default function App() {
           status: "Préparation",
           icon: "🏍️",
           inviteCode: code,
+
+          // Modèle de matériel choisi à la création
+          equipmentPreset,
+
           createdAt: serverTimestamp(),
         }
       );
@@ -465,6 +516,7 @@ export default function App() {
 
       setTripName("");
       setTripLocation("");
+      setSelectedEquipmentListId("");
       setShowCreate(false);
 
       setCreatedInviteCode(code);
@@ -876,6 +928,38 @@ export default function App() {
               }
               placeholder="Ex. : France · Pyrénées"
             />
+
+            {/* Sélection de la liste favorite */}
+            <label htmlFor="trip-equipment-list">
+              Liste de matériel à utiliser
+            </label>
+
+            <select
+              id="trip-equipment-list"
+              value={selectedEquipmentListId}
+              onChange={(event) =>
+                setSelectedEquipmentListId(event.target.value)
+              }
+            >
+              <option value="">
+                Aucune liste favorite
+              </option>
+
+              {equipmentLists.map((list) => (
+                <option key={list.id} value={list.id}>
+                  {list.name} (
+                  {(list.items || []).filter(
+                    (item) => item.selected
+                  ).length} équipements
+                  )
+                </option>
+              ))}
+            </select>
+
+            <p className="profile-muted">
+              Seuls les équipements cochés dans cette liste seront
+              copiés dans ton aventure.
+            </p>
 
             <button
               className="primary-button full-button"
