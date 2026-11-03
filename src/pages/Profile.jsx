@@ -16,6 +16,73 @@ import { auth, db } from "../firebase";
 
 const ridingOptions = ["Trail Offroad", "Route", "Passagère"];
 
+const defaultEquipmentCategories = [
+  {
+    name: "Équipement pilote",
+    items: [
+      "Casque",
+      "Gants",
+      "Bottes",
+      "Veste de protection",
+      "Pantalon de protection",
+    ],
+  },
+  {
+    name: "Matériel moto",
+    items: [
+      "Trousse à outils",
+      "Kit réparation crevaison",
+      "Sangles",
+      "Antivol",
+      "Lubrifiant chaîne",
+    ],
+  },
+  {
+    name: "Navigation",
+    items: [
+      "Téléphone / GPS",
+      "Support téléphone",
+      "Chargeur / batterie externe",
+    ],
+  },
+  {
+    name: "Sécurité et secours",
+    items: [
+      "Trousse de premiers secours",
+      "Lampe",
+      "Gilet réfléchissant",
+    ],
+  },
+  {
+    name: "Confort",
+    items: [
+      "Gourde",
+      "Sac à dos",
+      "Lunettes de soleil",
+      "Protection pluie",
+    ],
+  },
+];
+
+function createId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function createBaseEquipmentList() {
+  return {
+    id: createId(),
+    name: "Matériel de base",
+    items: defaultEquipmentCategories.flatMap((category) =>
+      category.items.map((name) => ({
+        id: createId(),
+        name,
+        category: category.name,
+        selected: true,
+      }))
+    ),
+  };
+}
+
 function compressPhoto(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -61,6 +128,14 @@ export default function Profile({ user = auth.currentUser, onBack }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Listes personnelles de matériel
+  const [equipmentLists, setEquipmentLists] = useState([]);
+  const [activeEquipmentListId, setActiveEquipmentListId] = useState("");
+  const [newListName, setNewListName] = useState("");
+  const [newEquipmentName, setNewEquipmentName] = useState("");
+  const [newEquipmentCategory, setNewEquipmentCategory] = useState("Matériel moto");
+  const [savingEquipment, setSavingEquipment] = useState(false);
+
   useEffect(() => {
     let active = true;
 
@@ -85,6 +160,21 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           setCity(data.city || "");
           setRegion(data.region || "");
           setCountry(data.country || "");
+
+          const savedLists = Array.isArray(data.equipmentLists)
+            ? data.equipmentLists
+            : [];
+
+          const initialLists = savedLists.length
+            ? savedLists
+            : [createBaseEquipmentList()];
+
+          setEquipmentLists(initialLists);
+          setActiveEquipmentListId(initialLists[0].id);
+        } else {
+          const initialList = createBaseEquipmentList();
+          setEquipmentLists([initialList]);
+          setActiveEquipmentListId(initialList.id);
         }
 
         setEmail(user.email || "");
@@ -158,6 +248,173 @@ export default function Profile({ user = auth.currentUser, onBack }) {
       setMessage("Photo prête. Enregistre ton profil pour la conserver.");
     } catch {
       setError("Impossible de lire cette photo.");
+    }
+  }
+
+  // Gestion des listes de matériel
+  const activeEquipmentList = equipmentLists.find(
+    (list) => list.id === activeEquipmentListId
+  );
+
+  function updateEquipmentList(listId, updater) {
+    setEquipmentLists((current) =>
+      current.map((list) =>
+        list.id === listId ? updater(list) : list
+      )
+    );
+  }
+
+  function createEquipmentList() {
+    if (equipmentLists.length >= 9) {
+      setError("Tu peux créer jusqu'à 9 listes de matériel.");
+      return;
+    }
+
+    const name = newListName.trim();
+
+    if (!name) {
+      setError("Donne un nom à ta nouvelle liste.");
+      return;
+    }
+
+    const newList = {
+      id: createId(),
+      name,
+      items: [],
+    };
+
+    setEquipmentLists((current) => [...current, newList]);
+    setActiveEquipmentListId(newList.id);
+    setNewListName("");
+    setError("");
+    setMessage("Nouvelle liste créée. Pense à enregistrer tes listes.");
+  }
+
+  function renameEquipmentList() {
+    if (!activeEquipmentList) return;
+
+    const name = window.prompt(
+      "Nouveau nom de la liste :",
+      activeEquipmentList.name
+    );
+
+    if (name === null) return;
+
+    if (!name.trim()) {
+      setError("Le nom de la liste ne peut pas être vide.");
+      return;
+    }
+
+    updateEquipmentList(activeEquipmentList.id, (list) => ({
+      ...list,
+      name: name.trim(),
+    }));
+
+    setMessage("Nom de la liste modifié. Pense à enregistrer tes listes.");
+    setError("");
+  }
+
+  function deleteEquipmentList() {
+    if (!activeEquipmentList) return;
+
+    if (equipmentLists.length <= 1) {
+      setError("Tu dois conserver au moins une liste de matériel.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Supprimer la liste « ${activeEquipmentList.name} » ?`
+    );
+
+    if (!confirmed) return;
+
+    const remainingLists = equipmentLists.filter(
+      (list) => list.id !== activeEquipmentList.id
+    );
+
+    setEquipmentLists(remainingLists);
+    setActiveEquipmentListId(remainingLists[0].id);
+    setMessage("Liste supprimée. Pense à enregistrer tes listes.");
+    setError("");
+  }
+
+  function toggleEquipment(itemId) {
+    if (!activeEquipmentList) return;
+
+    updateEquipmentList(activeEquipmentList.id, (list) => ({
+      ...list,
+      items: list.items.map((item) =>
+        item.id === itemId
+          ? { ...item, selected: !item.selected }
+          : item
+      ),
+    }));
+  }
+
+  function addEquipment(event) {
+    event.preventDefault();
+
+    if (!activeEquipmentList) return;
+
+    const name = newEquipmentName.trim();
+
+    if (!name) {
+      setError("Entre le nom de l'équipement à ajouter.");
+      return;
+    }
+
+    updateEquipmentList(activeEquipmentList.id, (list) => ({
+      ...list,
+      items: [
+        ...list.items,
+        {
+          id: createId(),
+          name,
+          category: newEquipmentCategory,
+          selected: true,
+        },
+      ],
+    }));
+
+    setNewEquipmentName("");
+    setError("");
+    setMessage("Équipement ajouté. Pense à enregistrer tes listes.");
+  }
+
+  function removeEquipment(itemId) {
+    if (!activeEquipmentList) return;
+
+    updateEquipmentList(activeEquipmentList.id, (list) => ({
+      ...list,
+      items: list.items.filter((item) => item.id !== itemId),
+    }));
+  }
+
+  async function saveEquipmentLists() {
+    if (!user?.uid || savingEquipment) return;
+
+    setSavingEquipment(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          equipmentLists,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setMessage("Tes listes de matériel ont bien été enregistrées !");
+    } catch (err) {
+      console.error("Enregistrement des listes :", err);
+      setError(
+        "Impossible d'enregistrer les listes : " + err.message
+      );
+    } finally {
+      setSavingEquipment(false);
     }
   }
 
@@ -276,6 +533,12 @@ export default function Profile({ user = auth.currentUser, onBack }) {
     );
   }
 
+  const equipmentCategories = [
+    ...new Set(
+      (activeEquipmentList?.items || []).map((item) => item.category)
+    ),
+  ];
+
   return (
     <main className="trips-section profile-page">
       <style>{`
@@ -362,7 +625,8 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           font-weight: 600;
         }
 
-        .profile-page .profile-field input {
+        .profile-page .profile-field input,
+        .profile-page .profile-field select {
           width: 100%;
           box-sizing: border-box;
           min-width: 0;
@@ -457,6 +721,98 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           background: #292920;
           color: var(--profile-light);
           cursor: pointer;
+        }
+
+        .profile-page .equipment-list-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin: 18px 0;
+        }
+
+        .profile-page .equipment-list-toolbar select {
+          flex: 1;
+          min-width: 180px;
+        }
+
+        .profile-page .equipment-category {
+          margin-top: 22px;
+        }
+
+        .profile-page .equipment-category h4 {
+          color: var(--profile-light);
+          margin: 12px 0;
+        }
+
+        .profile-page .equipment-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 12px;
+          margin: 7px 0;
+          border: 1px solid #38382f;
+          border-radius: 8px;
+          background: #20211d;
+        }
+
+        .profile-page .equipment-item label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+          min-width: 0;
+          cursor: pointer;
+        }
+
+        .profile-page .equipment-item input {
+          accent-color: var(--profile-sand);
+          width: 17px;
+          height: 17px;
+          flex: 0 0 auto;
+        }
+
+        .profile-page .equipment-item button {
+          flex: 0 0 auto;
+        }
+
+        .profile-page .equipment-add-form {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(150px, .7fr) auto;
+          gap: 10px;
+          align-items: end;
+          margin-top: 22px;
+        }
+
+        .profile-page .equipment-add-form .profile-field {
+          margin: 0;
+        }
+
+        .profile-page .equipment-create {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid #38382f;
+        }
+
+        .profile-page .equipment-create input {
+          flex: 1;
+          min-width: 160px;
+        }
+
+        .profile-page .equipment-count {
+          color: #999;
+          font-size: 12px;
+          margin-left: auto;
+        }
+
+        @media (max-width: 700px) {
+          .profile-page .equipment-add-form {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 600px) {
@@ -731,6 +1087,160 @@ export default function Profile({ user = auth.currentUser, onBack }) {
           {saving ? "Enregistrement..." : "Enregistrer mon profil →"}
         </button>
       </form>
+
+      <section className="profile-card profile-section">
+        <span className="eyebrow">06 — MES LISTES DE MATÉRIEL</span>
+        <h3>Mon équipement favori</h3>
+        <p className="profile-muted">
+          Prépare tes listes personnelles. Tu pourras ensuite les reprendre
+          dans une aventure sans modifier tes listes favorites.
+        </p>
+
+        <div className="equipment-list-toolbar">
+          <select
+            value={activeEquipmentListId}
+            onChange={(e) => setActiveEquipmentListId(e.target.value)}
+            aria-label="Choisir une liste de matériel"
+          >
+            {equipmentLists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={renameEquipmentList}
+            disabled={!activeEquipmentList}
+          >
+            Renommer
+          </button>
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={deleteEquipmentList}
+            disabled={equipmentLists.length <= 1}
+          >
+            Supprimer
+          </button>
+        </div>
+
+        {activeEquipmentList && (
+          <>
+            {activeEquipmentList.items.length === 0 && (
+              <p className="profile-muted">
+                Cette liste est vide. Ajoute ton premier équipement ci-dessous.
+              </p>
+            )}
+
+            {equipmentCategories.map((category) => (
+              <div className="equipment-category" key={category}>
+                <h4>{category}</h4>
+
+                {activeEquipmentList.items
+                  .filter((item) => item.category === category)
+                  .map((item) => (
+                    <div className="equipment-item" key={item.id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(item.selected)}
+                          onChange={() => toggleEquipment(item.id)}
+                        />
+                        <span>{item.name}</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        className="outline-button"
+                        onClick={() => removeEquipment(item.id)}
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            ))}
+
+            <form className="equipment-add-form" onSubmit={addEquipment}>
+              <div className="profile-field">
+                <label htmlFor="new-equipment-name">
+                  Nouvel équipement
+                </label>
+                <input
+                  id="new-equipment-name"
+                  value={newEquipmentName}
+                  onChange={(e) => setNewEquipmentName(e.target.value)}
+                  placeholder="Ex. : Sacoche de réservoir"
+                />
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="new-equipment-category">Catégorie</label>
+                <select
+                  id="new-equipment-category"
+                  value={newEquipmentCategory}
+                  onChange={(e) => setNewEquipmentCategory(e.target.value)}
+                >
+                  {defaultEquipmentCategories.map((category) => (
+                    <option key={category.name} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+
+              <button type="submit" className="outline-button">
+                + Ajouter
+              </button>
+            </form>
+          </>
+        )}
+
+        <div className="equipment-create">
+          <input
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+            placeholder="Nom de la nouvelle liste"
+            maxLength={40}
+            aria-label="Nom de la nouvelle liste"
+          />
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={createEquipmentList}
+            disabled={equipmentLists.length >= 9}
+          >
+            + Créer une liste
+          </button>
+
+          <span className="equipment-count">
+            {equipmentLists.length}/9 listes
+          </span>
+        </div>
+
+        <p className="profile-muted">
+          Les cases cochées indiquent les équipements que tu souhaites
+          conserver dans cette liste favorite. Ce ne sont pas encore les
+          cases « matériel chargé » d'une aventure.
+        </p>
+
+        <button
+          type="button"
+          className="primary-button full-button profile-save"
+          onClick={saveEquipmentLists}
+          disabled={savingEquipment}
+        >
+          {savingEquipment
+            ? "Enregistrement..."
+            : "Enregistrer mes listes de matériel →"}
+        </button>
+      </section>
     </main>
   );
 }
