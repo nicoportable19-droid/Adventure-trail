@@ -1014,7 +1014,7 @@ export default function App() {
           setEditLocation={setEditLocation}
           savingDetails={savingDetails}
           onSave={saveTripDetails}
-          onCreateInvite={createInviteCodeForTrip}
+           userId={userId} onCreateInvite={createInviteCodeForTrip}
           creatingInvite={saving}
           onOpenProfile={(uid) =>
             openPublicProfile(uid, "trip")
