@@ -1,163 +1,128 @@
-import { useEffect, useState } from "react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
-import MeetingPointMap from "../components/MeetingPointMap";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
+import { useEffect } from "react";
 
-export default function MeetingPoint({ trip, onBack }) {
-  const [meetingPoint, setMeetingPoint] = useState(
-    trip.meetingPoint || null
-  );
-  const [address, setAddress] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+function MapClick({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      onSelect({
+        lat: event.latlng.lat,
+        lng: event.latlng.lng,
+      });
+    },
+  });
+
+  return null;
+}
+
+function FitRoutes({ routes }) {
+  const map = useMap();
 
   useEffect(() => {
-    setMeetingPoint(trip.meetingPoint || null);
-  }, [trip.id, trip.meetingPoint]);
+    const points = routes.flat();
 
-  async function searchAddress(event) {
-    event.preventDefault();
-
-    if (!address.trim() || searching) return;
-
-    setSearching(true);
-    setMessage("");
-
-    try {
-      const cacheKey =
-        "adventure-trail-address-" + address.trim().toLowerCase();
-
-      const cached = localStorage.getItem(cacheKey);
-      let result;
-
-      if (cached) {
-        result = JSON.parse(cached);
-      } else {
-        const params = new URLSearchParams({
-          q: address.trim(),
-          format: "jsonv2",
-          limit: "1",
-        });
-
-        const response = await fetch(
-          "https://nominatim.openstreetmap.org/search?" + params
-        );
-
-        if (!response.ok) {
-          throw new Error("Service de recherche indisponible.");
-        }
-
-        const results = await response.json();
-
-        if (!results.length) {
-          throw new Error(
-            "Adresse introuvable. Essaie avec une ville ou un code postal."
-          );
-        }
-
-        result = {
-          lat: Number(results[0].lat),
-          lng: Number(results[0].lon),
-        };
-
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-      }
-
-      setMeetingPoint(result);
-      setMessage("Adresse trouvée ! Pense à enregistrer le point.");
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setSearching(false);
+    if (points.length > 1) {
+      map.fitBounds(points, { padding: [30, 30] });
     }
-  }
+  }, [routes, map]);
 
-  async function saveMeetingPoint() {
-    if (!meetingPoint || saving) return;
+  return null;
+}
 
-    setSaving(true);
-    setMessage("");
+export default function MeetingPointMap({
+  meetingPoint,
+  onSelect,
+  gpxTrack = [],
+  gpxTracks = [],
+}) {
+  const routes = gpxTracks.length ? gpxTracks : (gpxTrack.length ? [gpxTrack] : []);
+  const allPoints = routes.flat();
 
-    try {
-      await updateDoc(doc(db, "trips", trip.id), {
-        meetingPoint,
-        updatedAt: serverTimestamp(),
-      });
+  const center = meetingPoint
+    ? [meetingPoint.lat, meetingPoint.lng]
+    : allPoints.length > 0
+      ? allPoints[0]
+      : [46.6, 2.2];
 
-      setMessage("Point de rendez-vous enregistré !");
-    } catch (error) {
-      console.error(error);
-      setMessage("Erreur : " + error.message);
-    } finally {
-      setSaving(false);
-    }
-  }
+  const hasRoutes = routes.some((route) => route.length > 1);
 
   return (
-    <section className="trips-section">
-      <button className="text-button" onClick={onBack}>
-        ← Retour à l'aventure
-      </button>
+    <div style={{ width: "100%" }}>
+      {meetingPoint && (
+        <p style={{ color: "#D9B65D", marginBottom: "10px" }}>
+          Touchez la carte pour placer le point de rendez-vous.
+        </p>
+      )}
 
-      <div className="section-heading" style={{ marginTop: "25px" }}>
-        <div>
-          <span className="eyebrow">ADVENTURE TRAIL · CARTE</span>
-          <h2>Carte & rendez-vous</h2>
-          <p className="trip-location">{trip.name}</p>
-        </div>
-      </div>
-
-      <article className="trip-card">
-        <div className="trip-info">
-          <h3>📍 Où commence l'aventure ?</h3>
-
-          <form onSubmit={searchAddress} style={{ marginBottom: "20px" }}>
-            <label>Rechercher une adresse ou une ville</label>
-
-            <input
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="Ex. : Place Bellecour, Lyon"
-            />
-
-            <button
-              className="primary-button full-button"
-              type="submit"
-              disabled={searching || !address.trim()}
-              style={{ marginTop: "10px" }}
-            >
-              {searching ? "Recherche..." : "Rechercher l'adresse"}
-            </button>
-          </form>
-
-          <MeetingPointMap
-            meetingPoint={meetingPoint}
-            onSelect={(point) => {
-              setMeetingPoint(point);
-              setMessage("Position sélectionnée. Pense à l'enregistrer.");
-            }}
-            gpxTrack={trip.gpxTrack || []}
+      <div
+        style={{
+          height: "360px",
+          width: "100%",
+          borderRadius: "12px",
+          overflow: "hidden",
+          border: "1px solid #444",
+        }}
+      >
+        <MapContainer
+          center={center}
+          zoom={meetingPoint ? 13 : 6}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <button
-            className="primary-button full-button"
-            onClick={saveMeetingPoint}
-            disabled={!meetingPoint || saving}
-            style={{ marginTop: "15px" }}
-          >
-            {saving
-              ? "Enregistrement..."
-              : "Enregistrer le point de rendez-vous →"}
-          </button>
+          {onSelect && <MapClick onSelect={onSelect} />}
 
-          {message && (
-            <p style={{ color: "#D9B65D", marginTop: "15px" }}>
-              {message}
-            </p>
+          {meetingPoint && (
+            <Marker position={[meetingPoint.lat, meetingPoint.lng]} />
           )}
-        </div>
-      </article>
-    </section>
+
+          {routes.map((route, index) =>
+            route.length > 1 ? (
+              <Polyline
+                key={index}
+                positions={route}
+                pathOptions={{
+                  color: [
+                    "#D9B65D",
+                    "#4FA3D1",
+                    "#65B889",
+                    "#D77C55",
+                    "#A78BDB",
+                    "#D66C9B",
+                  ][index % 6],
+                  weight: 5,
+                  opacity: 0.9,
+                }}
+              />
+            ) : null
+          )}
+
+          {hasRoutes && <FitRoutes routes={routes} />}
+        </MapContainer>
+      </div>
+
+      {meetingPoint && (
+        <p style={{ color: "#aaa", fontSize: "12px" }}>
+          Position : {meetingPoint.lat.toFixed(5)},{" "}
+          {meetingPoint.lng.toFixed(5)}
+        </p>
+      )}
+
+      {hasRoutes && (
+        <p style={{ color: "#D9B65D", fontSize: "13px" }}>
+          {routes.filter((route) => route.length > 1).length} parcours affiché(s)
+          · {allPoints.length} points GPS
+        </p>
+      )}
+    </div>
   );
 }
