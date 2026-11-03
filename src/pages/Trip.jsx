@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
@@ -7,6 +8,7 @@ import CalendarPage from "./CalendarPage";
 export default function Trip({
   trip,
   tripMembers = [],
+  userId,
   errorMessage,
   editName,
   setEditName,
@@ -36,6 +38,8 @@ export default function Trip({
     return (
       <MeetingPoint
         trip={trip}
+        tripMembers={tripMembers}
+        userId={userId}
         onBack={() => setActivePage("home")}
       />
     );
@@ -157,10 +161,8 @@ export default function Trip({
                     aria-label="Modifier les détails de l'aventure"
                     title="Modifier les détails"
                     style={{
-                      border:
-                        "1px solid rgba(217, 182, 93, 0.45)",
-                      background:
-                        "rgba(217, 182, 93, 0.12)",
+                      border: "1px solid rgba(217, 182, 93, 0.45)",
+                      background: "rgba(217, 182, 93, 0.12)",
                       color: "#D9B65D",
                       borderRadius: "10px",
                       width: "38px",
@@ -184,9 +186,7 @@ export default function Trip({
 
                 <input
                   value={editName}
-                  onChange={(event) =>
-                    setEditName(event.target.value)
-                  }
+                  onChange={(event) => setEditName(event.target.value)}
                   placeholder="Nom du road trip"
                   required
                 />
@@ -195,9 +195,7 @@ export default function Trip({
 
                 <input
                   value={editLocation}
-                  onChange={(event) =>
-                    setEditLocation(event.target.value)
-                  }
+                  onChange={(event) => setEditLocation(event.target.value)}
                   placeholder="Destination"
                 />
 
@@ -214,9 +212,7 @@ export default function Trip({
                     type="submit"
                     disabled={savingDetails}
                   >
-                    {savingDetails
-                      ? "Enregistrement..."
-                      : "Enregistrer"}
+                    {savingDetails ? "Enregistrement..." : "Enregistrer"}
                   </button>
 
                   <button
@@ -248,9 +244,7 @@ export default function Trip({
 
                 <p>
                   <strong>Ton rôle :</strong>{" "}
-                  {trip.myRole === "owner"
-                    ? "Organisateur"
-                    : "Participant"}
+                  {trip.myRole === "owner" ? "Organisateur" : "Participant"}
                 </p>
               </>
             )}
@@ -266,9 +260,7 @@ export default function Trip({
 
           {trip.inviteCode ? (
             <>
-              <p>
-                Invite tes compagnons avec ce code :
-              </p>
+              <p>Invite tes compagnons avec ce code :</p>
 
               <button
                 className="primary-button full-button"
@@ -280,12 +272,7 @@ export default function Trip({
               </button>
 
               {copyStatus && (
-                <p
-                  style={{
-                    color: "#D9B65D",
-                    marginTop: "10px",
-                  }}
-                >
+                <p style={{ color: "#D9B65D", marginTop: "10px" }}>
                   {copyStatus}
                 </p>
               )}
@@ -293,8 +280,7 @@ export default function Trip({
           ) : trip.myRole === "owner" ? (
             <>
               <p>
-                Aucun code de partage n'est encore créé
-                pour cette aventure.
+                Aucun code de partage n'est encore créé pour cette aventure.
               </p>
 
               <button
@@ -309,8 +295,7 @@ export default function Trip({
             </>
           ) : (
             <p>
-              Le code de partage n'est pas disponible
-              pour cette aventure.
+              Le code de partage n'est pas disponible pour cette aventure.
             </p>
           )}
 
@@ -318,8 +303,7 @@ export default function Trip({
             style={{
               marginTop: "25px",
               paddingTop: "20px",
-              borderTop:
-                "1px solid rgba(217, 182, 93, 0.2)",
+              borderTop: "1px solid rgba(217, 182, 93, 0.2)",
             }}
           >
             <h3 style={{ marginBottom: "15px" }}>
@@ -335,9 +319,7 @@ export default function Trip({
                     type="button"
                     className="trip-card"
                     key={member.id}
-                    onClick={() =>
-                      onOpenProfile(member.uid || member.id)
-                    }
+                    onClick={() => onOpenProfile(member.uid || member.id)}
                     style={{
                       textAlign: "left",
                       cursor: "pointer",
@@ -345,9 +327,7 @@ export default function Trip({
                     }}
                   >
                     <div className="trip-info">
-                      <h3>
-                        👤 {member.firstName || "Rider"}
-                      </h3>
+                      <h3>👤 {member.firstName || "Rider"}</h3>
 
                       <p className="trip-location">
                         {member.role === "owner"
