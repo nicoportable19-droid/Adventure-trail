@@ -1,6 +1,6 @@
-
 export default function Home({
   trips = [],
+  participantCounts = {},
   firebaseStatus = "Connexion...",
   errorMessage = "",
   onCreate = () => {},
@@ -114,8 +114,13 @@ export default function Home({
 
                   <div className="trip-meta">
                     <span>◷ {trip.dates || "Dates à définir"}</span>
+
                     <span>
-                      ♟ {trip.participants || 1} participant(s)
+                      ♟ {
+                        participantCounts[trip.id] ??
+                        trip.participants ??
+                        1
+                      } participant(s)
                     </span>
                   </div>
 
