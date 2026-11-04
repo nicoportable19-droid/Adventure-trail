@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 
@@ -5,6 +6,7 @@ import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
 import EquipmentPage from "./EquipmentPage";
 import CalendarPage from "./CalendarPage";
+import LiveTracking from "./LiveTracking";
 
 export default function Trip({
   trip,
@@ -64,6 +66,12 @@ export default function Trip({
       description: "Importer, consulter et partager les parcours GPX.",
     },
     {
+      id: "live",
+      icon: "📡",
+      title: "Suivi GPS en direct",
+      description: "Partager ta position et voir les riders sur la carte.",
+    },
+    {
       id: "equipment",
       icon: "🎒",
       title: "Matériel",
@@ -93,6 +101,18 @@ export default function Trip({
         path="map"
         element={
           <MeetingPoint
+            trip={trip}
+            tripMembers={tripMembers}
+            userId={userId}
+            onBack={() => navigate(`/trip/${tripId}`)}
+          />
+        }
+      />
+
+      <Route
+        path="live"
+        element={
+          <LiveTracking
             trip={trip}
             tripMembers={tripMembers}
             userId={userId}
@@ -166,30 +186,35 @@ export default function Trip({
                       <h3>Détails de l'aventure</h3>
                     </div>
 
-                    {trip.myRole === "owner" && !isEditingDetails && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingDetails(true)}
-                        aria-label="Modifier les détails de l'aventure"
-                        title="Modifier les détails"
-                        style={{
-                          border: "1px solid rgba(217, 182, 93, 0.45)",
-                          background: "rgba(217, 182, 93, 0.12)",
-                          color: "#D9B65D",
-                          borderRadius: "10px",
-                          width: "38px",
-                          height: "38px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "19px",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                        }}
-                      >
-                        ✏️
-                      </button>
-                    )}
+                    {trip.myRole === "owner" &&
+                      !isEditingDetails && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsEditingDetails(true)
+                          }
+                          aria-label="Modifier les détails de l'aventure"
+                          title="Modifier les détails"
+                          style={{
+                            border:
+                              "1px solid rgba(217, 182, 93, 0.45)",
+                            background:
+                              "rgba(217, 182, 93, 0.12)",
+                            color: "#D9B65D",
+                            borderRadius: "10px",
+                            width: "38px",
+                            height: "38px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "19px",
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        >
+                          ✏️
+                        </button>
+                      )}
                   </div>
 
                   {isEditingDetails ? (
@@ -272,14 +297,19 @@ export default function Trip({
               </article>
             </div>
 
-            <article className="trip-card" style={{ marginTop: "25px" }}>
+            <article
+              className="trip-card"
+              style={{ marginTop: "25px" }}
+            >
               <div className="trip-info">
                 <span className="eyebrow">L'ÉQUIPE</span>
                 <h3>Participants et partage</h3>
 
                 {trip.inviteCode ? (
                   <>
-                    <p>Invite tes compagnons avec ce code :</p>
+                    <p>
+                      Invite tes compagnons avec ce code :
+                    </p>
 
                     <button
                       className="primary-button full-button"
@@ -304,8 +334,8 @@ export default function Trip({
                 ) : trip.myRole === "owner" ? (
                   <>
                     <p>
-                      Aucun code de partage n'est encore créé pour cette
-                      aventure.
+                      Aucun code de partage n'est encore créé
+                      pour cette aventure.
                     </p>
 
                     <button
@@ -320,8 +350,8 @@ export default function Trip({
                   </>
                 ) : (
                   <p>
-                    Le code de partage n'est pas disponible pour cette
-                    aventure.
+                    Le code de partage n'est pas disponible
+                    pour cette aventure.
                   </p>
                 )}
 
@@ -329,7 +359,8 @@ export default function Trip({
                   style={{
                     marginTop: "25px",
                     paddingTop: "20px",
-                    borderTop: "1px solid rgba(217, 182, 93, 0.2)",
+                    borderTop:
+                      "1px solid rgba(217, 182, 93, 0.2)",
                   }}
                 >
                   <h3 style={{ marginBottom: "15px" }}>
@@ -346,7 +377,9 @@ export default function Trip({
                           className="trip-card"
                           key={member.id}
                           onClick={() =>
-                            onOpenProfile(member.uid || member.id)
+                            onOpenProfile(
+                              member.uid || member.id
+                            )
                           }
                           style={{
                             textAlign: "left",
@@ -355,7 +388,9 @@ export default function Trip({
                           }}
                         >
                           <div className="trip-info">
-                            <h3>👤 {member.firstName || "Rider"}</h3>
+                            <h3>
+                              👤 {member.firstName || "Rider"}
+                            </h3>
 
                             <p className="trip-location">
                               {member.role === "owner"
@@ -379,8 +414,8 @@ export default function Trip({
               <h2>Préparons l'aventure</h2>
 
               <p className="trip-location">
-                Retrouvez ici tous les outils pour organiser votre road
-                trip.
+                Retrouvez ici tous les outils pour organiser
+                votre road trip.
               </p>
 
               <div className="trip-grid adventure-menu">
@@ -390,7 +425,9 @@ export default function Trip({
                     type="button"
                     className="trip-card adventure-menu-card"
                     onClick={() =>
-                      navigate(`/trip/${tripId}/${section.id}`)
+                      navigate(
+                        `/trip/${tripId}/${section.id}`
+                      )
                     }
                     style={{
                       textAlign: "left",
