@@ -466,47 +466,54 @@ try {
 
 // Ouvrir le profil personnel
 function openProfile() {
-setSelectedTrip(null);
-setTripMembers([]);
+  setSelectedTrip(null);
+  setTripMembers([]);
 
-setShowProfile(true);
-setShowCommunity(false);
-setPublicProfileId(null);
-setErrorMessage("");
+  setShowProfile(true);
+  setShowCommunity(false);
+  setPublicProfileId(null);
+  setErrorMessage("");
 
+  navigate("/profile");
 }
 
 // Fermer le profil personnel
 function closeProfile() {
-setShowProfile(false);
+  navigate("/");
+  setShowProfile(false);
 }
 
 // Ouvrir la communauté
 function openCommunity() {
-setSelectedTrip(null);
-setTripMembers([]);
+  setSelectedTrip(null);
+  setTripMembers([]);
 
-setShowProfile(false);
-setPublicProfileId(null);
-setShowCommunity(true);
-setErrorMessage("");
+  setShowProfile(false);
+  setShowCommunity(true);
+  setPublicProfileId(null);
+  setErrorMessage("");
 
+  navigate("/community");
 }
 
 // Ouvrir un profil public
 function openPublicProfile(uid, returnPage = "home") {
-if (!uid) return;
+  setSelectedTrip(null);
+  setTripMembers([]);
 
-setProfileReturnPage(returnPage);
-setPublicProfileId(uid);
-setShowProfile(false);
-setErrorMessage("");
+  setShowProfile(false);
+  setShowCommunity(false);
+  setPublicProfileId(uid);
+  setProfileReturnPage(returnPage);
+  setErrorMessage("");
 
+  navigate(`/user/${uid}`);
 }
 
 // Retour du profil public
 function closePublicProfile() {
-setPublicProfileId(null);
+  setPublicProfileId(null);
+  navigate(profileReturnPage === "community" ? "/community" : "/");
 }
 
 // Déconnexion
@@ -1087,56 +1094,86 @@ padding: 18px 4%;
   </header>
 
   {/* AFFICHAGE DES PAGES */}
-  {showProfile ? (
-    <Profile
-      user={user}
-      onBack={closeProfile}
-    />
-  ) : publicProfileId ? (
-    <PublicProfile
-      userId={publicProfileId}
-      onBack={closePublicProfile}
-    />
-  ) : showCommunity ? (
-    <Community
-      onBack={() => setShowCommunity(false)}
-      onOpenProfile={(uid) =>
-        openPublicProfile(uid, "community")
-      }
-    />
-  ) : selectedTrip ? (
-    <Trip
-      trip={selectedTrip}
-      tripMembers={tripMembers}
-      errorMessage={errorMessage}
-      editName={editName}
-      setEditName={setEditName}
-      editLocation={editLocation}
-      setEditLocation={setEditLocation}
-      savingDetails={savingDetails}
-      onSave={saveTripDetails}
-      userId={userId}
-      onCreateInvite={createInviteCodeForTrip}
-      creatingInvite={saving}
-      onOpenProfile={(uid) =>
-        openPublicProfile(uid, "trip")
-      }
-      onBack={closeTrip}
-    />
-  ) : (
-    <Home
-      trips={trips}
-      participantCounts={participantCounts}
-      firebaseStatus={firebaseStatus}
-      errorMessage={errorMessage}
-      onCreate={() => setShowCreate(true)}
-      onJoin={() => setShowJoin(true)}
-      onOpenTrip={openTrip}
-      onOpenCommunity={openCommunity}
-      onDeleteTrip={deleteTrip}
-    />
-  )}
+<Routes>
+  <Route
+    path="/"
+    element={
+      <Home
+        trips={trips}
+        participantCounts={participantCounts}
+        firebaseStatus={firebaseStatus}
+        errorMessage={errorMessage}
+        onCreate={() => setShowCreate(true)}
+        onJoin={() => setShowJoin(true)}
+        onOpenTrip={openTrip}
+        onOpenCommunity={openCommunity}
+        onDeleteTrip={deleteTrip}
+      />
+    }
+  />
 
+  <Route
+    path="/profile"
+    element={
+      <Profile
+        user={user}
+        onBack={closeProfile}
+      />
+    }
+  />
+
+  <Route
+    path="/community"
+    element={
+      <Community
+        onBack={() => navigate("/")}
+        onOpenProfile={(uid) =>
+          openPublicProfile(uid, "community")
+        }
+      />
+    }
+  />
+
+  <Route
+    path="/user/:uid"
+    element={
+      publicProfileId ? (
+        <PublicProfile
+          userId={publicProfileId}
+          onBack={closePublicProfile}
+        />
+      ) : null
+    }
+  />
+
+  <Route
+    path="/trip/:tripId"
+    element={
+      selectedTrip ? (
+        <Trip
+          trip={selectedTrip}
+          tripMembers={tripMembers}
+          errorMessage={errorMessage}
+          editName={editName}
+          setEditName={setEditName}
+          editLocation={editLocation}
+          setEditLocation={setEditLocation}
+          savingDetails={savingDetails}
+          onSave={saveTripDetails}
+          userId={userId}
+          onCreateInvite={createInviteCodeForTrip}
+          creatingInvite={saving}
+          onOpenProfile={(uid) =>
+            openPublicProfile(uid, "trip")
+          }
+          onBack={closeTrip}
+        />
+      ) : null
+    }
+  />
+
+  <Route path="*" element={<Navigate to="/" replace />} />
+</Routes>
   <footer>
     <span>ADVENTURE TRAIL</span>
     <span>FAITES DE LA ROUTE UNE AVENTURE.</span>
