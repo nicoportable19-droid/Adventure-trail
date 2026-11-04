@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
@@ -119,10 +118,6 @@ export default function Community({ onBack, onOpenProfile }) {
                   .filter(Boolean)
                   .join(" · ") || "Région non renseignée"}
               </p>
-
-              <span className="trip-link">
-                Voir le profil →
-              </span>
             </div>
           </button>
         ))}
