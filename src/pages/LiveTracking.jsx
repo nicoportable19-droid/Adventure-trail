@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import L from "leaflet";
 import {
@@ -17,7 +16,100 @@ import {
 } from "react-leaflet";
 import { db } from "../firebase";
 
-function createRiderIcon() {
+// Couleurs des statuts
+const STATUS_COLORS = {
+  live: "#35B86B",
+  weak: "#D9B65D",
+  offline: "#E05252",
+  inactive: "#888888",
+};
+
+// Conversion de la date Firebase en millisecondes
+function getTimestamp(updatedAt) {
+  if (!updatedAt) return 0;
+
+  if (typeof updatedAt.toMillis === "function") {
+    return updatedAt.toMillis();
+  }
+
+  if (updatedAt instanceof Date) {
+    return updatedAt.getTime();
+  }
+
+  if (typeof updatedAt.seconds === "number") {
+    return updatedAt.seconds * 1000;
+  }
+
+  return 0;
+}
+
+// Calcul du statut selon l'ancienneté de la position
+function getLocationStatus(location, now) {
+  const timestamp = getTimestamp(location.updatedAt);
+
+  if (!timestamp) {
+    return "offline";
+  }
+
+  const elapsed = Math.max(0, now - timestamp);
+
+  if (elapsed < 60 * 1000) {
+    return "live";
+  }
+
+  if (elapsed <= 5 * 60 * 1000) {
+    return "weak";
+  }
+
+  return "offline";
+}
+
+// Libellé du statut
+function getStatusLabel(status) {
+  switch (status) {
+    case "live":
+      return "En direct";
+    case "weak":
+      return "Réseau faible";
+    case "offline":
+      return "Hors ligne";
+    default:
+      return "Pas de partage";
+  }
+}
+
+// Temps écoulé depuis la dernière position
+function getTimeAgo(updatedAt, now) {
+  const timestamp = getTimestamp(updatedAt);
+
+  if (!timestamp) {
+    return "Aucune position reçue";
+  }
+
+  const seconds = Math.max(
+    0,
+    Math.floor((now - timestamp) / 1000)
+  );
+
+  if (seconds < 60) {
+    return `Il y a ${seconds} seconde${seconds > 1 ? "s" : ""}`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+
+  if (minutes < 60) {
+    return `Il y a ${minutes} minute${minutes > 1 ? "s" : ""}`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+
+  return `Il y a ${hours} heure${hours > 1 ? "s" : ""}`;
+}
+
+// Création de l'icône du rider avec sa couleur de statut
+function createRiderIcon(status) {
+  const color = STATUS_COLORS[status] || STATUS_COLORS.offline;
+
   return L.divIcon({
     className: "",
     html: `
@@ -25,13 +117,13 @@ function createRiderIcon() {
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: #D9B65D;
+        background: ${color};
         border: 3px solid white;
         box-shadow: 0 2px 8px rgba(0,0,0,.5);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #171813;
+        color: white;
         font-weight: bold;
       ">●</div>
     `,
@@ -51,10 +143,22 @@ export default function LiveTracking({
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Horloge locale pour actualiser les statuts sans écrire dans Firebase
+  const [now, setNow] = useState(Date.now());
+
   const isMember = tripMembers.some(
     (member) => (member.uid || member.id) === userId
   );
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Écoute des positions des participants
   useEffect(() => {
     if (!trip?.id || !isMember) {
       setLoading(false);
@@ -77,6 +181,7 @@ export default function LiveTracking({
         }));
 
         setLocations(currentLocations);
+        setNow(Date.now());
         setLoading(false);
       },
       (error) => {
@@ -89,6 +194,7 @@ export default function LiveTracking({
     return unsubscribe;
   }, [trip?.id, isMember]);
 
+  // Partage de sa propre position
   useEffect(() => {
     if (!sharing || !userId || !trip?.id) return;
 
@@ -155,6 +261,7 @@ export default function LiveTracking({
     };
   }, [sharing, userId, trip?.id]);
 
+  // Arrêt du partage
   async function stopSharing() {
     setSharing(false);
     setMessage("Arrêt du partage de position...");
@@ -181,7 +288,9 @@ export default function LiveTracking({
         </button>
 
         <h2>Accès réservé aux membres</h2>
-        <p>Tu dois être membre de cette aventure pour accéder au suivi GPS.</p>
+        <p>
+          Tu dois être membre de cette aventure pour accéder au suivi GPS.
+        </p>
       </section>
     );
   }
@@ -197,11 +306,32 @@ export default function LiveTracking({
       Number.isFinite(Number(location.lng))
   );
 
+  const validLocations = locations.filter(
+    (location) =>
+      Number.isFinite(Number(location.lat)) &&
+      Number.isFinite(Number(location.lng))
+  );
+
   const mapCenter = myLocation
-    ? [myLocation.lat, myLocation.lng]
+    ? [Number(myLocation.lat), Number(myLocation.lng)]
     : otherLocations.length
-      ? [otherLocations[0].lat, otherLocations[0].lng]
+      ? [
+          Number(otherLocations[0].lat),
+          Number(otherLocations[0].lng),
+        ]
       : [46.6, 2.2];
+
+  // Statistiques des statuts
+  const statusCounts = {
+    live: 0,
+    weak: 0,
+    offline: 0,
+  };
+
+  validLocations.forEach((location) => {
+    const status = getLocationStatus(location, now);
+    statusCounts[status]++;
+  });
 
   return (
     <section className="trips-section">
@@ -217,9 +347,11 @@ export default function LiveTracking({
         </div>
       </div>
 
+      {/* Mon partage */}
       <article className="trip-card" style={{ marginTop: "20px" }}>
         <div className="trip-info">
           <span className="eyebrow">TON PARTAGE</span>
+
           <h3>
             {sharing
               ? "📡 Partage activé"
@@ -259,10 +391,146 @@ export default function LiveTracking({
         </div>
       </article>
 
+      {/* Résumé des statuts */}
+      <article className="trip-card" style={{ marginTop: "20px" }}>
+        <div className="trip-info">
+          <span className="eyebrow">ÉTAT DU SUIVI</span>
+          <h3>État des positions reçues</h3>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            {[
+              {
+                key: "live",
+                label: "En direct",
+              },
+              {
+                key: "weak",
+                label: "Réseau faible",
+              },
+              {
+                key: "offline",
+                label: "Hors ligne",
+              },
+            ].map((item) => (
+              <div
+                key={item.key}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  padding: "8px 12px",
+                  borderRadius: "20px",
+                  background: "rgba(128,128,128,0.12)",
+                  fontSize: "13px",
+                }}
+              >
+                <span
+                  style={{
+                    width: "9px",
+                    height: "9px",
+                    borderRadius: "50%",
+                    background: STATUS_COLORS[item.key],
+                  }}
+                />
+
+                {item.label} : {statusCounts[item.key]}
+              </div>
+            ))}
+          </div>
+        </div>
+      </article>
+
+      {/* Liste des participants */}
+      <article className="trip-card" style={{ marginTop: "20px" }}>
+        <div className="trip-info">
+          <span className="eyebrow">PARTICIPANTS</span>
+          <h3>État du suivi GPS</h3>
+
+          {tripMembers.map((member) => {
+            const memberId = member.uid || member.id;
+
+            const location = locations.find(
+              (item) => item.uid === memberId
+            );
+
+            const status = location
+              ? getLocationStatus(location, now)
+              : "inactive";
+
+            const statusColor =
+              STATUS_COLORS[status] || STATUS_COLORS.inactive;
+
+            return (
+              <div
+                key={memberId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px 0",
+                  borderBottom:
+                    "1px solid rgba(217,182,93,0.15)",
+                }}
+              >
+                <div>
+                  <strong>
+                    {member.firstName ||
+                      (memberId === userId ? "Moi" : "Rider")}
+                  </strong>
+
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      fontSize: "12px",
+                      opacity: 0.7,
+                    }}
+                  >
+                    {location
+                      ? getTimeAgo(location.updatedAt, now)
+                      : "Aucune position partagée"}
+                  </p>
+                </div>
+
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: statusColor,
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: statusColor,
+                    }}
+                  />
+                  {getStatusLabel(status)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </article>
+
+      {/* Carte */}
       <div className="trip-card" style={{ marginTop: "20px" }}>
         <div className="trip-info">
           <span className="eyebrow">CARTE EN DIRECT</span>
-          <h3>Riders connectés ({locations.length})</h3>
+          <h3>Riders sur la carte ({validLocations.length})</h3>
 
           {loading ? (
             <p>Chargement des positions...</p>
@@ -286,18 +554,13 @@ export default function LiveTracking({
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {locations.map((location) => {
-                  if (
-                    !Number.isFinite(Number(location.lat)) ||
-                    !Number.isFinite(Number(location.lng))
-                  ) {
-                    return null;
-                  }
-
+                {validLocations.map((location) => {
                   const member = tripMembers.find(
                     (item) =>
                       (item.uid || item.id) === location.uid
                   );
+
+                  const status = getLocationStatus(location, now);
 
                   return (
                     <Marker
@@ -306,7 +569,7 @@ export default function LiveTracking({
                         Number(location.lat),
                         Number(location.lng),
                       ]}
-                      icon={createRiderIcon()}
+                      icon={createRiderIcon(status)}
                     >
                       <Popup>
                         <strong>
@@ -315,10 +578,22 @@ export default function LiveTracking({
                               ? "Moi"
                               : "Rider")}
                         </strong>
+
                         <br />
-                        {location.uid === userId
-                          ? "Ta position"
-                          : "Position partagée"}
+
+                        <span
+                          style={{
+                            color:
+                              STATUS_COLORS[status],
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {getStatusLabel(status)}
+                        </span>
+
+                        <br />
+
+                        {getTimeAgo(location.updatedAt, now)}
                       </Popup>
                     </Marker>
                   );
@@ -327,11 +602,22 @@ export default function LiveTracking({
             </div>
           )}
 
-          {!loading && locations.length === 0 && (
+          {!loading && validLocations.length === 0 && (
             <p style={{ marginTop: "15px" }}>
               Aucun membre ne partage sa position pour le moment.
             </p>
           )}
+
+          <p
+            style={{
+              marginTop: "12px",
+              fontSize: "12px",
+              opacity: 0.7,
+            }}
+          >
+            Les statuts sont actualisés automatiquement toutes les
+            15 secondes.
+          </p>
         </div>
       </div>
     </section>
