@@ -365,30 +365,31 @@ return () => {
 }, [selectedTrip?.id, userId]);
 
 // Ouvrir une aventure
-function openTrip(trip) {
-setSelectedTrip(trip);
-setEditName(trip.name || "");
-setEditLocation(trip.location || "");
-setErrorMessage("");
-setTripMembers([]);
+  function openTrip(trip) {
+  setSelectedTrip(trip);
+  setEditName(trip.name || "");
+  setEditLocation(trip.location || "");
+  setErrorMessage("");
+  setTripMembers([]);
 
-setShowProfile(false);
-setShowCommunity(false);
-setPublicProfileId(null);
+  setShowProfile(false);
+  setShowCommunity(false);
+  setPublicProfileId(null);
 
+  navigate(`/trip/${trip.id}`);
 }
 
 // Fermer une aventure
 function closeTrip() {
-setSelectedTrip(null);
-setTripMembers([]);
-setErrorMessage("");
+  setSelectedTrip(null);
+  setTripMembers([]);
+  setErrorMessage("");
 
-setShowCommunity(false);
-setPublicProfileId(null);
+  setShowCommunity(false);
+  setPublicProfileId(null);
 
+  navigate("/");
 }
-
 // Supprimer une aventure créée par l'utilisateur
 async function deleteTrip(trip) {
 if (!trip || !userId || trip.ownerId !== userId) {
