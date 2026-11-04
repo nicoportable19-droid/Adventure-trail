@@ -1,5 +1,6 @@
-
 import { useState } from "react";
+import { Routes, Route, useNavigate, useParams } from "react-router-dom";
+
 import GpxPage from "./GpxPage";
 import MeetingPoint from "./MeetingPoint";
 import EquipmentPage from "./EquipmentPage";
@@ -21,49 +22,10 @@ export default function Trip({
   onOpenProfile = () => {},
   onBack,
 }) {
-  const [activePage, setActivePage] = useState("home");
+ const navigate = useNavigate();
+const { tripId } = useParams();
   const [copyStatus, setCopyStatus] = useState("");
   const [isEditingDetails, setIsEditingDetails] = useState(false);
-
-  if (activePage === "gpx") {
-    return (
-      <GpxPage
-        trip={trip}
-        onBack={() => setActivePage("home")}
-      />
-    );
-  }
-
-  if (activePage === "map") {
-    return (
-      <MeetingPoint
-        trip={trip}
-        tripMembers={tripMembers}
-        userId={userId}
-        onBack={() => setActivePage("home")}
-      />
-    );
-  }
-
-  if (activePage === "equipment") {
-    return (
-      <EquipmentPage
-        trip={trip}
-        tripMembers={tripMembers}
-        onBack={() => setActivePage("home")}
-      />
-    );
-  }
-
-  if (activePage === "availability") {
-    return (
-      <CalendarPage
-        trip={trip}
-        tripMembers={tripMembers}
-        onBack={() => setActivePage("home")}
-      />
-    );
-  }
 
   async function copyInviteCode() {
     try {
@@ -115,6 +77,63 @@ export default function Trip({
   ];
 
   return (
+
+    <>
+  <Route
+    path="gpx"
+    element={
+      <GpxPage
+        trip={trip}
+        onBack={() => navigate(`/trip/${tripId}`)}
+      />
+    }
+  />
+
+  <Route
+    path="map"
+    element={
+      <MeetingPoint
+        trip={trip}
+        tripMembers={tripMembers}
+        userId={userId}
+        onBack={() => navigate(`/trip/${tripId}`)}
+      />
+    }
+  />
+
+  <Route
+    path="equipment"
+    element={
+      <EquipmentPage
+        trip={trip}
+        tripMembers={tripMembers}
+        onBack={() => navigate(`/trip/${tripId}`)}
+      />
+    }
+  />
+
+  <Route
+    path="availability"
+    element={
+      <CalendarPage
+        trip={trip}
+        tripMembers={tripMembers}
+        onBack={() => navigate(`/trip/${tripId}`)}
+      />
+    }
+  />
+
+      <Route
+  index
+  element={
+    <section className="trips-section">
+      {/* Le contenu actuel de ta section principale sera placé ici */}
+    </section>
+  }
+/>
+      
+</Routes>  
+    
     <section className="trips-section">
       <button className="text-button" onClick={onBack}>
         ← Retour à mes aventures
@@ -365,7 +384,7 @@ export default function Trip({
               key={section.id}
               type="button"
               className="trip-card adventure-menu-card"
-              onClick={() => setActivePage(section.id)}
+              onClick={() => navigate(`/trip/${tripId}/${section.id}`)}
               style={{
                 textAlign: "left",
                 cursor: "pointer",
@@ -388,5 +407,7 @@ export default function Trip({
         </div>
       </div>
     </section>
+    </Routes>
+  </>
   );
 }
