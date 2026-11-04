@@ -1,4 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
@@ -41,6 +48,8 @@ bytes,
 }
 
 export default function App() {
+    const navigate = useNavigate();
+  const location = useLocation();
 const [user, setUser] = useState(null);
 const [authLoading, setAuthLoading] = useState(true);
 const [authPage, setAuthPage] = useState("login");
