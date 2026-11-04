@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 
@@ -363,10 +362,6 @@ export default function Trip({
                                 ? "Organisateur"
                                 : "Participant"}
                             </p>
-
-                            <span className="adventure-menu-link">
-                              Voir le profil →
-                            </span>
                           </div>
                         </button>
                       ))}
@@ -409,10 +404,6 @@ export default function Trip({
 
                       <h3>{section.title}</h3>
                       <p>{section.description}</p>
-
-                      <span className="adventure-menu-link">
-                        OUVRIR →
-                      </span>
                     </div>
                   </button>
                 ))}
