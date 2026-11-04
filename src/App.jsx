@@ -1147,7 +1147,7 @@ padding: 18px 4%;
   />
 
   <Route
-    path="/trip/:tripId"
+    path="/trip/:tripId/*"
     element={
       selectedTrip ? (
         <Trip
