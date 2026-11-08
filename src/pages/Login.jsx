@@ -1,12 +1,8 @@
 
 import { useState } from "react";
-import {
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { signInWithGoogleAdventureTrail } from "../auth/googleAuth";
 
 export default function Login({ onGoToRegister }) {
   const [email, setEmail] = useState("");
@@ -55,13 +51,7 @@ export default function Login({ onGoToRegister }) {
     setLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider();
-
-      provider.setCustomParameters({
-        prompt: "select_account",
-      });
-
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithGoogleAdventureTrail();
 
       console.log(
         "Connexion Google réussie :",

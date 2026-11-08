@@ -2,11 +2,10 @@
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../firebase";
+import { signInWithGoogleAdventureTrail } from "../auth/googleAuth";
 
 export default function Register({ onGoToLogin }) {
   const [firstName, setFirstName] = useState("");
@@ -62,8 +61,7 @@ export default function Register({ onGoToLogin }) {
     setLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithGoogleAdventureTrail();
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
         setError("L'inscription avec Google a échoué.");
